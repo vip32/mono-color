@@ -152,18 +152,148 @@
         dialog::backdrop {
             background: rgba(0, 0, 0, .55);
         }
+
+        body {
+            transition: background-color .35s ease, color .35s ease;
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(1.6rem);
+            transition: opacity .5s ease, transform .5s ease;
+        }
+
+        .reveal.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .motion-card {
+            transition: transform .25s ease, box-shadow .25s ease, filter .25s ease;
+        }
+
+        .motion-card:hover {
+            transform: translateY(-.2rem);
+            filter: brightness(1.03);
+        }
+
+        dialog[open] {
+            animation: dialogIn .2s ease-out;
+        }
+
+        @keyframes dialogIn {
+            from {
+                opacity: 0;
+                transform: translateY(.8rem) scale(.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        #playground-surface {
+            --pg-radius: 1rem;
+            --pg-padding: 1rem;
+            --pg-shadow: 0 0 #0000;
+            --pg-tone: var(--accent);
+        }
+
+        #playground-surface .pg-item {
+            border-radius: var(--pg-radius);
+            padding: var(--pg-padding);
+            box-shadow: var(--pg-shadow);
+            transition: all .2s ease;
+        }
+
+        #playground-surface .pg-tone {
+            background: var(--pg-tone);
+            color: #fff;
+        }
+
+        .snippet-tab[aria-selected="true"],
+        .preview-btn[data-active="true"],
+        .ui-tab-btn[aria-selected="true"] {
+            background: var(--p);
+            color: var(--def);
+            border-color: var(--p);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            body,
+            .reveal,
+            .motion-card,
+            #playground-surface .pg-item,
+            dialog[open] {
+                transition: none !important;
+                animation: none !important;
+                transform: none !important;
+            }
+        }
     </style>
 
     <script>
         const themes = ["light", "dark", "monokai"];
+        const tokenNames = ["--fg", "--h", "--bg", "--b", "--p", "--def", "--gray", "--accent", "--warning", "--error", "--success", "--info"];
+        const themeTokens = {
+            light: {
+                "--fg": "#555",
+                "--h": "#444",
+                "--bg": "#fefefe",
+                "--b": "#ccc",
+                "--p": "#000",
+                "--def": "#eee",
+                "--gray": "#ccc",
+                "--accent": "#fa0",
+                "--warning": "#ffd600",
+                "--error": "#d50000",
+                "--success": "#00c853",
+                "--info": "#2962ff"
+            },
+            dark: {
+                "--fg": "#aaa",
+                "--h": "#efefef",
+                "--bg": "#000",
+                "--b": "#333",
+                "--p": "#eee",
+                "--def": "#121212",
+                "--gray": "#777",
+                "--accent": "#fa0",
+                "--warning": "#ffd600",
+                "--error": "#d50000",
+                "--success": "#00c853",
+                "--info": "#2962ff"
+            },
+            monokai: {
+                "--fg": "#f8f8f2",
+                "--h": "#f6f0cc",
+                "--bg": "#221f22",
+                "--b": "#4f4a56",
+                "--p": "#f92672",
+                "--def": "#2f2a33",
+                "--gray": "#75715e",
+                "--accent": "#ae81ff",
+                "--warning": "#e6db74",
+                "--error": "#fd971f",
+                "--success": "#a6e22e",
+                "--info": "#66d9ef"
+            }
+        };
 
         function toggleTheme() {
             const body = document.body;
             const current = body.dataset.theme;
             const index = themes.indexOf(current);
             const next = themes[(index + 1) % themes.length];
-            body.dataset.theme = next;
-            document.getElementById("theme-label").textContent = next;
+            setTheme(next);
+        }
+
+        function setTheme(theme) {
+            document.body.dataset.theme = theme;
+            document.getElementById("theme-label").textContent = theme;
+            updateTokenInspector();
+            updateContrastAudit();
         }
 
         function openSampleDialog() {
@@ -187,8 +317,345 @@
             dialog.removeAttribute("open");
         }
 
+        function parseColor(value) {
+            if (!value) {
+                return null;
+            }
+            const color = value.trim();
+            if (color.startsWith("#")) {
+                const hex = color.slice(1);
+                if (hex.length === 3) {
+                    return {
+                        r: parseInt(hex[0] + hex[0], 16),
+                        g: parseInt(hex[1] + hex[1], 16),
+                        b: parseInt(hex[2] + hex[2], 16)
+                    };
+                }
+                if (hex.length === 6) {
+                    return {
+                        r: parseInt(hex.slice(0, 2), 16),
+                        g: parseInt(hex.slice(2, 4), 16),
+                        b: parseInt(hex.slice(4, 6), 16)
+                    };
+                }
+            }
+            const rgbMatch = color.match(/rgba?\(([^)]+)\)/);
+            if (rgbMatch) {
+                const parts = rgbMatch[1].split(",").map(function (part) {
+                    return Number(part.trim());
+                });
+                return { r: parts[0] || 0, g: parts[1] || 0, b: parts[2] || 0 };
+            }
+            return null;
+        }
+
+        function luminance(rgb) {
+            const channels = [rgb.r, rgb.g, rgb.b].map(function (channel) {
+                const value = channel / 255;
+                return value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
+            });
+            return (0.2126 * channels[0]) + (0.7152 * channels[1]) + (0.0722 * channels[2]);
+        }
+
+        function contrastRatio(fg, bg) {
+            const fgRgb = parseColor(fg);
+            const bgRgb = parseColor(bg);
+            if (!fgRgb || !bgRgb) {
+                return 1;
+            }
+            const l1 = luminance(fgRgb);
+            const l2 = luminance(bgRgb);
+            const lighter = Math.max(l1, l2);
+            const darker = Math.min(l1, l2);
+            return (lighter + 0.05) / (darker + 0.05);
+        }
+
+        function updateTokenInspector() {
+            const bodyStyles = getComputedStyle(document.body);
+            const tableBody = document.getElementById("token-table-body");
+            if (!tableBody) {
+                return;
+            }
+            tableBody.innerHTML = "";
+            tokenNames.forEach(function (name) {
+                const value = bodyStyles.getPropertyValue(name).trim();
+                const row = document.createElement("tr");
+                row.className = "border-b border-[var(--b)]";
+                const tokenCell = document.createElement("td");
+                tokenCell.className = "p-3";
+                tokenCell.textContent = name;
+                const valueCell = document.createElement("td");
+                valueCell.className = "p-3";
+                valueCell.textContent = value;
+                const actionCell = document.createElement("td");
+                actionCell.className = "p-3 text-right";
+                const button = document.createElement("button");
+                button.className = "rounded-[1rem] border border-[var(--b)] bg-[var(--def)] px-3 py-2 text-[1.2rem]";
+                button.textContent = "Copy";
+                button.addEventListener("click", function () {
+                    copyText(name + ": " + value + ";");
+                });
+                actionCell.appendChild(button);
+                row.appendChild(tokenCell);
+                row.appendChild(valueCell);
+                row.appendChild(actionCell);
+                tableBody.appendChild(row);
+            });
+        }
+
+        function updateContrastAudit() {
+            const bodyStyles = getComputedStyle(document.body);
+            const rows = document.getElementById("contrast-table-body");
+            if (!rows) {
+                return;
+            }
+            const pairs = [
+                { label: "Body text", fg: bodyStyles.getPropertyValue("--fg").trim(), bg: bodyStyles.getPropertyValue("--bg").trim() },
+                { label: "Heading text", fg: bodyStyles.getPropertyValue("--h").trim(), bg: bodyStyles.getPropertyValue("--bg").trim() },
+                { label: "Primary button", fg: bodyStyles.getPropertyValue("--def").trim(), bg: bodyStyles.getPropertyValue("--p").trim() },
+                { label: "Default surface", fg: bodyStyles.getPropertyValue("--fg").trim(), bg: bodyStyles.getPropertyValue("--def").trim() }
+            ];
+            rows.innerHTML = "";
+            pairs.forEach(function (pair) {
+                const ratio = contrastRatio(pair.fg, pair.bg);
+                let status = "Fail";
+                if (ratio >= 7) {
+                    status = "AAA";
+                } else if (ratio >= 4.5) {
+                    status = "AA";
+                }
+                const tr = document.createElement("tr");
+                tr.className = "border-b border-[var(--b)]";
+                tr.innerHTML = "<td class=\"p-3\">" + pair.label + "</td><td class=\"p-3\">" + ratio.toFixed(2) + ":1</td><td class=\"p-3\">" + status + "</td>";
+                rows.appendChild(tr);
+            });
+            const motionPref = document.getElementById("motion-pref");
+            if (motionPref) {
+                motionPref.textContent = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "reduce" : "no-preference";
+            }
+        }
+
+        function copyText(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text);
+                return;
+            }
+            const area = document.createElement("textarea");
+            area.value = text;
+            document.body.appendChild(area);
+            area.select();
+            document.execCommand("copy");
+            document.body.removeChild(area);
+        }
+
+        function copyFromElement(id) {
+            const el = document.getElementById(id);
+            if (!el) {
+                return;
+            }
+            copyText(el.textContent.trim());
+        }
+
+        function setPreview(mode) {
+            const frame = document.getElementById("preview-frame");
+            const label = document.getElementById("preview-mode-label");
+            if (!frame || !label) {
+                return;
+            }
+            const widths = { desktop: "100%", tablet: "82rem", mobile: "39rem" };
+            frame.style.maxWidth = widths[mode] || widths.desktop;
+            label.textContent = mode;
+            document.querySelectorAll(".preview-btn").forEach(function (button) {
+                button.dataset.active = button.dataset.mode === mode ? "true" : "false";
+            });
+        }
+
+        function applyPlayground() {
+            const radiusInput = document.getElementById("pg-radius");
+            const paddingInput = document.getElementById("pg-padding");
+            const shadowInput = document.getElementById("pg-shadow");
+            const toneInput = document.getElementById("pg-tone");
+            const surface = document.getElementById("playground-surface");
+            if (!radiusInput || !paddingInput || !shadowInput || !toneInput || !surface) {
+                return;
+            }
+            const shadowMap = {
+                none: "0 0 #0000",
+                sm: "0 .1rem .2rem rgba(0,0,0,.2)",
+                md: "0 .5rem 1.2rem rgba(0,0,0,.25)",
+                lg: "0 1rem 2rem rgba(0,0,0,.33)"
+            };
+            surface.style.setProperty("--pg-radius", radiusInput.value + "px");
+            surface.style.setProperty("--pg-padding", paddingInput.value + "px");
+            surface.style.setProperty("--pg-shadow", shadowMap[shadowInput.value]);
+            surface.style.setProperty("--pg-tone", "var(--" + toneInput.value + ")");
+            document.getElementById("pg-radius-out").textContent = radiusInput.value + "px";
+            document.getElementById("pg-padding-out").textContent = paddingInput.value + "px";
+        }
+
+        function openToast(type) {
+            const stack = document.getElementById("toast-stack");
+            if (!stack) {
+                return;
+            }
+            const colorMap = {
+                info: "var(--info)",
+                success: "var(--success)",
+                warning: "var(--warning)",
+                error: "var(--error)"
+            };
+            const textMap = {
+                info: "New info toast created.",
+                success: "Action saved successfully.",
+                warning: "This is a warning toast.",
+                error: "Something went wrong."
+            };
+            const toast = document.createElement("div");
+            toast.className = "motion-card rounded-[1rem] p-4 text-[1.4rem]";
+            toast.style.background = colorMap[type];
+            toast.style.color = type === "warning" ? "#000" : "#fff";
+            toast.textContent = textMap[type];
+            stack.appendChild(toast);
+            setTimeout(function () {
+                toast.remove();
+            }, 3200);
+        }
+
+        function toggleDropdown() {
+            const menu = document.getElementById("dropdown-menu");
+            const trigger = document.getElementById("dropdown-trigger");
+            if (!menu || !trigger) {
+                return;
+            }
+            menu.classList.toggle("hidden");
+            trigger.setAttribute("aria-expanded", menu.classList.contains("hidden") ? "false" : "true");
+        }
+
+        function closeDropdown() {
+            const menu = document.getElementById("dropdown-menu");
+            const trigger = document.getElementById("dropdown-trigger");
+            if (!menu || !trigger) {
+                return;
+            }
+            menu.classList.add("hidden");
+            trigger.setAttribute("aria-expanded", "false");
+        }
+
+        function toggleAccordion(panelId) {
+            const panel = document.getElementById(panelId);
+            const button = document.querySelector("[aria-controls=\"" + panelId + "\"]");
+            if (!panel || !button) {
+                return;
+            }
+            const expanded = button.getAttribute("aria-expanded") === "true";
+            button.setAttribute("aria-expanded", expanded ? "false" : "true");
+            panel.classList.toggle("hidden", expanded);
+        }
+
+        function switchUiTab(tabId) {
+            document.querySelectorAll("[data-ui-tab-target]").forEach(function (button) {
+                const selected = button.dataset.uiTabTarget === tabId;
+                button.setAttribute("aria-selected", selected ? "true" : "false");
+            });
+            document.querySelectorAll("[data-ui-tab-panel]").forEach(function (panel) {
+                panel.classList.toggle("hidden", panel.dataset.uiTabPanel !== tabId);
+            });
+        }
+
+        function switchSnippetTab(group, tab) {
+            const container = document.querySelector("[data-snippet-group=\"" + group + "\"]");
+            if (!container) {
+                return;
+            }
+            container.querySelectorAll("[data-tab-for]").forEach(function (button) {
+                const selected = button.dataset.tabFor === tab;
+                button.setAttribute("aria-selected", selected ? "true" : "false");
+            });
+            container.querySelectorAll("[data-tab-panel]").forEach(function (panel) {
+                panel.classList.toggle("hidden", panel.dataset.tabPanel !== tab);
+            });
+        }
+
+        function initRevealObserver() {
+            const elements = document.querySelectorAll(".reveal");
+            if (!("IntersectionObserver" in window)) {
+                elements.forEach(function (el) {
+                    el.classList.add("is-visible");
+                });
+                return;
+            }
+            const observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add("is-visible");
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.15 });
+            elements.forEach(function (el) {
+                observer.observe(el);
+            });
+        }
+
+        function generateStarterDownload() {
+            const selectedTheme = document.body.dataset.theme;
+            const selected = Array.from(document.querySelectorAll("[data-export-component]:checked")).map(function (box) {
+                return box.value;
+            });
+            const componentMarkup = {
+                dialog: "<button onclick=\"document.getElementById('starter-dialog').showModal()\" class=\"rounded-full px-4 py-2\" style=\"background:var(--accent);color:#fff\">Open Dialog</button>\\n<dialog id=\"starter-dialog\" style=\"border:.1rem solid var(--b);border-radius:1rem;background:var(--def);color:var(--fg);padding:1.6rem\">\\n<p>Starter dialog</p>\\n<button onclick=\"document.getElementById('starter-dialog').close()\" class=\"rounded-full px-4 py-2\" style=\"background:var(--p);color:var(--def)\">Close</button>\\n</dialog>",
+                toast: "<button onclick=\"starterToast()\" class=\"rounded-full px-4 py-2\" style=\"background:var(--info);color:#fff\">Show Toast</button>\\n<div id=\"starter-toast-stack\" style=\"display:grid;gap:.8rem;margin-top:1rem\"></div>",
+                tabs: "<div style=\"display:flex;gap:.8rem;margin-bottom:1rem\">\\n<button onclick=\"starterTab('one')\" class=\"rounded-full px-4 py-2\" style=\"background:var(--def);color:var(--fg)\">One</button>\\n<button onclick=\"starterTab('two')\" class=\"rounded-full px-4 py-2\" style=\"background:var(--def);color:var(--fg)\">Two</button>\\n</div>\\n<div id=\"starter-tab-one\">First tab panel</div>\\n<div id=\"starter-tab-two\" hidden>Second tab panel</div>",
+                dropdown: "<div style=\"position:relative;display:inline-block\">\\n<button onclick=\"starterDropdown()\" class=\"rounded-full px-4 py-2\" style=\"background:var(--def);color:var(--fg)\">Dropdown</button>\\n<div id=\"starter-menu\" hidden style=\"position:absolute;top:110%;left:0;min-width:14rem;padding:.8rem;border:.1rem solid var(--b);background:var(--def)\">\\n<a href=\"#\" style=\"display:block\">Action</a><a href=\"#\" style=\"display:block\">Settings</a>\\n</div>\\n</div>",
+                accordion: "<button onclick=\"starterAccordion()\" class=\"rounded-full px-4 py-2\" style=\"background:var(--def);color:var(--fg)\">Accordion</button>\\n<div id=\"starter-acc\" hidden style=\"margin-top:.8rem;padding:1rem;border:.1rem solid var(--b)\">Accordion content</div>",
+                forms: "<div style=\"display:grid;gap:.8rem;max-width:40rem\">\\n<input placeholder=\"Success state\" style=\"padding:.8rem;border:.1rem solid var(--success);background:var(--def);color:var(--fg)\">\\n<input placeholder=\"Error state\" style=\"padding:.8rem;border:.1rem solid var(--error);background:var(--def);color:var(--fg)\">\\n</div>"
+            };
+            const componentJs = {
+                dialog: "",
+                toast: "function starterToast(){const stack=document.getElementById('starter-toast-stack');const item=document.createElement('div');item.textContent='Toast ready';item.style.cssText='padding:.8rem 1rem;border-radius:.8rem;background:var(--success);color:#fff';stack.appendChild(item);setTimeout(()=>item.remove(),2200)}",
+                tabs: "function starterTab(tab){document.getElementById('starter-tab-one').hidden=tab!=='one';document.getElementById('starter-tab-two').hidden=tab!=='two'}",
+                dropdown: "function starterDropdown(){const menu=document.getElementById('starter-menu');menu.hidden=!menu.hidden}",
+                accordion: "function starterAccordion(){const panel=document.getElementById('starter-acc');panel.hidden=!panel.hidden}",
+                forms: ""
+            };
+            const tokens = themeTokens[selectedTheme];
+            const tokenCss = Object.keys(tokens).map(function (key) {
+                return "            " + key + ": " + tokens[key] + ";";
+            }).join("\n");
+            const selectedMarkup = selected.map(function (name) {
+                return componentMarkup[name] || "";
+            }).join("\n\n");
+            const selectedJs = selected.map(function (name) {
+                return componentJs[name] || "";
+            }).filter(Boolean).join("\n");
+            const output = "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<title>mono/color tailwind starter</title>\n<script src=\"https://cdn.tailwindcss.com\"><\\/script>\n<style>\n:root{font-size:62.5%}\nbody{\n" + tokenCss + "\nmargin:0;font:1.8rem/1.6 ui-monospace,monospace;color:var(--fg);background:var(--bg)}\na{color:var(--p)}\n</style>\n</head>\n<body>\n<div class=\"mx-auto max-w-[70rem] p-8\">\n<h1 class=\"text-[3.2rem]\" style=\"color:var(--h)\">Starter (" + selectedTheme + ")</h1>\n<div class=\"grid gap-4\">\n" + selectedMarkup + "\n</div>\n</div>\n<script>\n" + selectedJs + "\n<\\/script>\n</body>\n</html>";
+            const blob = new Blob([output], { type: "text/html" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "mono-tailwind-starter.html";
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
         window.addEventListener("DOMContentLoaded", function () {
             document.getElementById("theme-label").textContent = document.body.dataset.theme;
+            updateTokenInspector();
+            updateContrastAudit();
+            setPreview("desktop");
+            applyPlayground();
+            switchUiTab("tab-preview-1");
+            switchSnippetTab("dialog-snippet", "html");
+            document.querySelectorAll("#pg-radius,#pg-padding,#pg-shadow,#pg-tone").forEach(function (control) {
+                control.addEventListener("input", applyPlayground);
+            });
+            const dropdownRoot = document.getElementById("dropdown-root");
+            document.addEventListener("click", function (event) {
+                if (dropdownRoot && !dropdownRoot.contains(event.target)) {
+                    closeDropdown();
+                }
+            });
+            initRevealObserver();
         });
     </script>
     <script async defer src="https://buttons.github.io/buttons.js"></script>
@@ -524,6 +991,332 @@ body.dataset.theme = themes[(index + 1) % themes.length];</code></pre>
                             class="rounded-[2rem] bg-white p-[.4rem] text-[1.2rem] text-[var(--info)]"><b>500</b></span></button>
                 </div>
             </div>
+
+            <h1 class="reveal mt-12 text-[4rem] font-bold">Tailwind Super Showcase</h1>
+            <p class="reveal">Now that this version is fully Tailwind-based, this section highlights richer interactions
+                and tooling patterns.</p>
+
+            <section class="reveal mt-8">
+                <h2 class="text-[3.2rem] font-bold">Motion Showcase</h2>
+                <p>Cards below use theme-aware hover transitions and the page uses smooth theme transitions.</p>
+                <div class="grid gap-4 md:grid-cols-3">
+                    <div class="motion-card rounded-[1rem] border border-[var(--b)] bg-[var(--def)] p-4">Hover lift +
+                        brightness</div>
+                    <div class="motion-card rounded-[1rem] border border-[var(--b)] bg-[var(--def)] p-4">Dialog open
+                        animation</div>
+                    <div class="motion-card rounded-[1rem] border border-[var(--b)] bg-[var(--def)] p-4">Section reveal
+                        on scroll</div>
+                </div>
+            </section>
+
+            <section class="reveal mt-8">
+                <h2 class="text-[3.2rem] font-bold">Responsive Preview Bar</h2>
+                <p>Toggle viewport constraints for quick desktop/tablet/mobile checks.</p>
+                <div class="mb-4 flex flex-wrap items-center gap-3">
+                    <button class="preview-btn rounded-[2rem] border border-[var(--b)] bg-[var(--def)] px-4 py-2 text-[1.4rem]"
+                        data-mode="desktop" data-active="true" onclick="setPreview('desktop')">Desktop</button>
+                    <button class="preview-btn rounded-[2rem] border border-[var(--b)] bg-[var(--def)] px-4 py-2 text-[1.4rem]"
+                        data-mode="tablet" onclick="setPreview('tablet')">Tablet</button>
+                    <button class="preview-btn rounded-[2rem] border border-[var(--b)] bg-[var(--def)] px-4 py-2 text-[1.4rem]"
+                        data-mode="mobile" onclick="setPreview('mobile')">Mobile</button>
+                    <span class="text-[1.4rem]">active: <code id="preview-mode-label">desktop</code></span>
+                </div>
+                <div id="preview-frame"
+                    class="mx-auto w-full overflow-hidden rounded-[1rem] border border-[var(--b)] bg-[var(--def)] p-4 transition-all duration-300">
+                    <div class="grid gap-3 md:grid-cols-3">
+                        <div class="rounded-[1rem] bg-[var(--info)] p-4 text-white">Responsive Card A</div>
+                        <div class="rounded-[1rem] bg-[var(--warning)] p-4 text-black">Responsive Card B</div>
+                        <div class="rounded-[1rem] bg-[var(--success)] p-4 text-white">Responsive Card C</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="reveal mt-8">
+                <h2 class="text-[3.2rem] font-bold">Component Playground</h2>
+                <p>Live controls mutate shape, spacing, tone, and depth of sample components.</p>
+                <div class="grid gap-4 rounded-[1rem] border border-[var(--b)] bg-[var(--def)] p-4 md:grid-cols-2">
+                    <div class="grid gap-3">
+                        <label class="text-[1.4rem]">Radius: <span id="pg-radius-out">10px</span>
+                            <input id="pg-radius" type="range" min="0" max="32" value="10" class="w-full">
+                        </label>
+                        <label class="text-[1.4rem]">Padding: <span id="pg-padding-out">10px</span>
+                            <input id="pg-padding" type="range" min="6" max="26" value="10" class="w-full">
+                        </label>
+                        <label class="text-[1.4rem]">Shadow
+                            <select id="pg-shadow"
+                                class="mt-2 w-full rounded-[1rem] border border-[var(--b)] bg-[var(--bg)] p-3">
+                                <option value="none">none</option>
+                                <option value="sm">small</option>
+                                <option value="md" selected>medium</option>
+                                <option value="lg">large</option>
+                            </select>
+                        </label>
+                        <label class="text-[1.4rem]">Tone
+                            <select id="pg-tone"
+                                class="mt-2 w-full rounded-[1rem] border border-[var(--b)] bg-[var(--bg)] p-3">
+                                <option value="accent">accent</option>
+                                <option value="info">info</option>
+                                <option value="success">success</option>
+                                <option value="warning">warning</option>
+                                <option value="error">error</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div id="playground-surface" class="grid gap-3">
+                        <button class="pg-item pg-tone text-[1.4rem]">Playground Button</button>
+                        <div class="pg-item border border-[var(--b)] bg-[var(--bg)]">Playground Card</div>
+                        <input class="pg-item border border-[var(--b)] bg-[var(--bg)]" value="Playground Input">
+                    </div>
+                </div>
+            </section>
+
+            <section class="reveal mt-8">
+                <h2 class="text-[3.2rem] font-bold">Theme Token Inspector</h2>
+                <p>Token values below are live and update every time you switch themes.</p>
+                <div class="overflow-auto rounded-[1rem] border border-[var(--b)] bg-[var(--def)]">
+                    <table class="w-full border-collapse text-[1.4rem]">
+                        <thead>
+                            <tr>
+                                <th class="border-b border-[var(--b)] p-3 text-left">Token</th>
+                                <th class="border-b border-[var(--b)] p-3 text-left">Computed Value</th>
+                                <th class="border-b border-[var(--b)] p-3 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="token-table-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="reveal mt-8">
+                <h2 class="text-[3.2rem] font-bold">Tailwind Class Recipes</h2>
+                <div class="grid gap-4 md:grid-cols-2">
+                    <article class="rounded-[1rem] border border-[var(--b)] bg-[var(--def)] p-4">
+                        <h3 class="text-[2.2rem] font-bold">Pill CTA</h3>
+                        <pre><code id="recipe-pill">rounded-[2rem] bg-[var(--p)] px-4 py-2 text-[85%] text-[var(--def)]</code></pre>
+                        <button onclick="copyFromElement('recipe-pill')"
+                            class="rounded-[1rem] border border-[var(--b)] bg-[var(--bg)] px-3 py-2 text-[1.2rem]">Copy
+                            classes</button>
+                    </article>
+                    <article class="rounded-[1rem] border border-[var(--b)] bg-[var(--def)] p-4">
+                        <h3 class="text-[2.2rem] font-bold">Status Alert</h3>
+                        <pre><code id="recipe-alert">rounded-[1rem] bg-[var(--error)] p-4 text-[1.4rem] text-white</code></pre>
+                        <button onclick="copyFromElement('recipe-alert')"
+                            class="rounded-[1rem] border border-[var(--b)] bg-[var(--bg)] px-3 py-2 text-[1.2rem]">Copy
+                            classes</button>
+                    </article>
+                    <article class="rounded-[1rem] border border-[var(--b)] bg-[var(--def)] p-4">
+                        <h3 class="text-[2.2rem] font-bold">Card Shell</h3>
+                        <pre><code id="recipe-card">rounded-[1rem] border border-[var(--b)] bg-[var(--def)] p-4</code></pre>
+                        <button onclick="copyFromElement('recipe-card')"
+                            class="rounded-[1rem] border border-[var(--b)] bg-[var(--bg)] px-3 py-2 text-[1.2rem]">Copy
+                            classes</button>
+                    </article>
+                    <article class="rounded-[1rem] border border-[var(--b)] bg-[var(--def)] p-4">
+                        <h3 class="text-[2.2rem] font-bold">Field State</h3>
+                        <pre><code id="recipe-field">rounded-[1rem] border border-[var(--success)] bg-[var(--bg)] p-3</code></pre>
+                        <button onclick="copyFromElement('recipe-field')"
+                            class="rounded-[1rem] border border-[var(--b)] bg-[var(--bg)] px-3 py-2 text-[1.2rem]">Copy
+                            classes</button>
+                    </article>
+                </div>
+            </section>
+
+            <section class="reveal mt-8">
+                <h2 class="text-[3.2rem] font-bold">Accessibility Panel</h2>
+                <div class="grid gap-4 md:grid-cols-2">
+                    <div class="rounded-[1rem] border border-[var(--b)] bg-[var(--def)] p-4">
+                        <h3 class="text-[2.2rem] font-bold">Contrast Audit</h3>
+                        <table class="w-full border-collapse text-[1.3rem]">
+                            <thead>
+                                <tr>
+                                    <th class="border-b border-[var(--b)] p-3 text-left">Pair</th>
+                                    <th class="border-b border-[var(--b)] p-3 text-left">Ratio</th>
+                                    <th class="border-b border-[var(--b)] p-3 text-left">Level</th>
+                                </tr>
+                            </thead>
+                            <tbody id="contrast-table-body"></tbody>
+                        </table>
+                        <p class="mt-3 text-[1.3rem]">prefers-reduced-motion: <code id="motion-pref">unknown</code></p>
+                    </div>
+                    <div class="rounded-[1rem] border border-[var(--b)] bg-[var(--def)] p-4">
+                        <h3 class="text-[2.2rem] font-bold">Focus + Keyboard Demo</h3>
+                        <p class="text-[1.4rem]">Tab through controls to verify visible focus states.</p>
+                        <div class="grid gap-3">
+                            <button
+                                class="rounded-[1rem] border border-[var(--b)] bg-[var(--bg)] px-4 py-2 text-left focus:outline focus:outline-2 focus:outline-[var(--info)]">Focusable
+                                Button</button>
+                            <a href="#"
+                                class="rounded-[1rem] border border-[var(--b)] bg-[var(--bg)] px-4 py-2 no-underline focus:outline focus:outline-2 focus:outline-[var(--info)]">Focusable
+                                Link</a>
+                            <input placeholder="Focusable Input"
+                                class="rounded-[1rem] border border-[var(--b)] bg-[var(--bg)] p-3 focus:outline focus:outline-2 focus:outline-[var(--info)]">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="reveal mt-8">
+                <h2 class="text-[3.2rem] font-bold">Advanced Components</h2>
+                <div class="grid gap-4">
+                    <div class="rounded-[1rem] border border-[var(--b)] bg-[var(--def)] p-4">
+                        <h3 class="text-[2.2rem] font-bold">Tabs</h3>
+                        <div class="mb-3 flex flex-wrap gap-2">
+                            <button class="ui-tab-btn rounded-[2rem] border border-[var(--b)] px-4 py-2 text-[1.3rem]"
+                                data-ui-tab-target="tab-preview-1" aria-selected="true"
+                                onclick="switchUiTab('tab-preview-1')">Overview</button>
+                            <button class="ui-tab-btn rounded-[2rem] border border-[var(--b)] px-4 py-2 text-[1.3rem]"
+                                data-ui-tab-target="tab-preview-2" aria-selected="false"
+                                onclick="switchUiTab('tab-preview-2')">Markup</button>
+                            <button class="ui-tab-btn rounded-[2rem] border border-[var(--b)] px-4 py-2 text-[1.3rem]"
+                                data-ui-tab-target="tab-preview-3" aria-selected="false"
+                                onclick="switchUiTab('tab-preview-3')">Behavior</button>
+                        </div>
+                        <div class="rounded-[1rem] border border-[var(--b)] bg-[var(--bg)] p-4">
+                            <div data-ui-tab-panel="tab-preview-1">Tabs switch content panes without extra CSS files.
+                            </div>
+                            <div data-ui-tab-panel="tab-preview-2" class="hidden"><code>data-ui-tab-target +
+                                    data-ui-tab-panel</code></div>
+                            <div data-ui-tab-panel="tab-preview-3" class="hidden">Driven by <code>switchUiTab()</code>
+                                in plain JS.</div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-[1rem] border border-[var(--b)] bg-[var(--def)] p-4">
+                        <h3 class="text-[2.2rem] font-bold">Toast Notifications</h3>
+                        <div class="mb-3 flex flex-wrap gap-2">
+                            <button onclick="openToast('info')"
+                                class="rounded-[2rem] bg-[var(--info)] px-4 py-2 text-[1.3rem] text-white">Info</button>
+                            <button onclick="openToast('success')"
+                                class="rounded-[2rem] bg-[var(--success)] px-4 py-2 text-[1.3rem] text-white">Success</button>
+                            <button onclick="openToast('warning')"
+                                class="rounded-[2rem] bg-[var(--warning)] px-4 py-2 text-[1.3rem] text-black">Warning</button>
+                            <button onclick="openToast('error')"
+                                class="rounded-[2rem] bg-[var(--error)] px-4 py-2 text-[1.3rem] text-white">Error</button>
+                        </div>
+                        <div id="toast-stack" class="grid gap-2"></div>
+                    </div>
+
+                    <div class="rounded-[1rem] border border-[var(--b)] bg-[var(--def)] p-4">
+                        <h3 class="text-[2.2rem] font-bold">Dropdown + Accordion</h3>
+                        <div class="mb-4" id="dropdown-root">
+                            <button id="dropdown-trigger" aria-expanded="false" onclick="toggleDropdown()"
+                                class="rounded-[2rem] border border-[var(--b)] bg-[var(--bg)] px-4 py-2 text-[1.3rem]">Toggle
+                                Dropdown</button>
+                            <div id="dropdown-menu"
+                                class="mt-2 hidden w-56 rounded-[1rem] border border-[var(--b)] bg-[var(--bg)] p-2">
+                                <a href="#" class="block rounded-[.6rem] px-3 py-2 no-underline hover:bg-[var(--def)]">View
+                                    Profile</a>
+                                <a href="#" class="block rounded-[.6rem] px-3 py-2 no-underline hover:bg-[var(--def)]">Team
+                                    Settings</a>
+                                <a href="#" class="block rounded-[.6rem] px-3 py-2 no-underline hover:bg-[var(--def)]">Sign
+                                    out</a>
+                            </div>
+                        </div>
+                        <div class="grid gap-2">
+                            <button aria-expanded="false" aria-controls="acc-1" onclick="toggleAccordion('acc-1')"
+                                class="rounded-[1rem] border border-[var(--b)] bg-[var(--bg)] px-4 py-3 text-left">What is
+                                this showcase?</button>
+                            <div id="acc-1" class="hidden rounded-[1rem] border border-[var(--b)] bg-[var(--bg)] p-4">
+                                A Tailwind-first equivalent of the mono/color docs with extra interactive demos.
+                            </div>
+                            <button aria-expanded="false" aria-controls="acc-2" onclick="toggleAccordion('acc-2')"
+                                class="rounded-[1rem] border border-[var(--b)] bg-[var(--bg)] px-4 py-3 text-left">How
+                                themes are applied?</button>
+                            <div id="acc-2" class="hidden rounded-[1rem] border border-[var(--b)] bg-[var(--bg)] p-4">
+                                Through CSS variables on <code>body[data-theme]</code>.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="reveal mt-8">
+                <h2 class="text-[3.2rem] font-bold">Forms Lab</h2>
+                <p>Validation states, helper text, disabled/read-only, and grouped inputs.</p>
+                <div class="grid gap-4 rounded-[1rem] border border-[var(--b)] bg-[var(--def)] p-4 md:grid-cols-2">
+                    <div class="grid gap-3">
+                        <label class="text-[1.4rem]">Success field
+                            <input class="mt-2 w-full rounded-[1rem] border border-[var(--success)] bg-[var(--bg)] p-3"
+                                value="valid@email.com">
+                            <span class="text-[1.2rem] text-[var(--success)]">Looks good.</span>
+                        </label>
+                        <label class="text-[1.4rem]">Warning field
+                            <input class="mt-2 w-full rounded-[1rem] border border-[var(--warning)] bg-[var(--bg)] p-3"
+                                value="needs review">
+                            <span class="text-[1.2rem] text-[var(--warning)]">Please verify this value.</span>
+                        </label>
+                        <label class="text-[1.4rem]">Error field
+                            <input class="mt-2 w-full rounded-[1rem] border border-[var(--error)] bg-[var(--bg)] p-3"
+                                value="invalid">
+                            <span class="text-[1.2rem] text-[var(--error)]">This field is invalid.</span>
+                        </label>
+                    </div>
+                    <div class="grid gap-3">
+                        <label class="text-[1.4rem]">Input group
+                            <div class="mt-2 flex overflow-hidden rounded-[1rem] border border-[var(--b)]">
+                                <span class="bg-[var(--bg)] px-3 py-2 text-[1.4rem]">@</span>
+                                <input class="w-full border-0 bg-[var(--bg)] p-3" placeholder="username">
+                            </div>
+                        </label>
+                        <label class="text-[1.4rem]">Read only
+                            <input readonly class="mt-2 w-full rounded-[1rem] border border-[var(--b)] bg-[var(--bg)] p-3"
+                                value="readonly-value">
+                        </label>
+                        <label class="text-[1.4rem]">Disabled
+                            <input disabled class="mt-2 w-full rounded-[1rem] border border-[var(--b)] bg-[var(--bg)] p-3"
+                                value="disabled-value">
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <section class="reveal mt-8" data-snippet-group="dialog-snippet">
+                <h2 class="text-[3.2rem] font-bold">Code Snippet Tabs</h2>
+                <p>Same dialog sample explained as HTML, Tailwind classes, and behavior JS.</p>
+                <div class="mb-3 flex flex-wrap gap-2">
+                    <button class="snippet-tab rounded-[2rem] border border-[var(--b)] px-4 py-2 text-[1.3rem]"
+                        data-tab-for="html" aria-selected="true"
+                        onclick="switchSnippetTab('dialog-snippet','html')">HTML</button>
+                    <button class="snippet-tab rounded-[2rem] border border-[var(--b)] px-4 py-2 text-[1.3rem]"
+                        data-tab-for="classes" aria-selected="false"
+                        onclick="switchSnippetTab('dialog-snippet','classes')">Classes</button>
+                    <button class="snippet-tab rounded-[2rem] border border-[var(--b)] px-4 py-2 text-[1.3rem]"
+                        data-tab-for="js" aria-selected="false"
+                        onclick="switchSnippetTab('dialog-snippet','js')">JavaScript</button>
+                </div>
+                <div class="rounded-[1rem] border border-[var(--b)] bg-[var(--def)] p-2">
+                    <pre data-tab-panel="html"><code>&lt;button onclick="openSampleDialog()"&gt;Open Sample Dialog&lt;/button&gt;
+&lt;dialog id="sample-dialog"&gt;...&lt;/dialog&gt;</code></pre>
+                    <pre data-tab-panel="classes" class="hidden"><code>rounded-[2rem] border-0 bg-[var(--accent)] px-4 py-2 text-[85%] text-white
+rounded-[1rem] border border-[var(--b)] bg-[var(--def)] p-6</code></pre>
+                    <pre data-tab-panel="js" class="hidden"><code>function openSampleDialog(){ document.getElementById('sample-dialog').showModal(); }
+function closeSampleDialog(){ document.getElementById('sample-dialog').close(); }</code></pre>
+                </div>
+            </section>
+
+            <section class="reveal mt-8">
+                <h2 class="text-[3.2rem] font-bold">Export Starter</h2>
+                <p>Generate a minimal Tailwind starter HTML preloaded with current theme and selected components.</p>
+                <div class="rounded-[1rem] border border-[var(--b)] bg-[var(--def)] p-4">
+                    <div class="grid gap-2 md:grid-cols-3">
+                        <label class="flex items-center gap-2"><input type="checkbox" data-export-component value="dialog"
+                                checked>dialog</label>
+                        <label class="flex items-center gap-2"><input type="checkbox" data-export-component value="toast"
+                                checked>toast</label>
+                        <label class="flex items-center gap-2"><input type="checkbox" data-export-component value="tabs"
+                                checked>tabs</label>
+                        <label class="flex items-center gap-2"><input type="checkbox" data-export-component value="dropdown"
+                                checked>dropdown</label>
+                        <label class="flex items-center gap-2"><input type="checkbox" data-export-component
+                                value="accordion" checked>accordion</label>
+                        <label class="flex items-center gap-2"><input type="checkbox" data-export-component value="forms"
+                                checked>forms</label>
+                    </div>
+                    <button onclick="generateStarterDownload()"
+                        class="mt-4 rounded-[2rem] bg-[var(--p)] px-5 py-3 text-[1.4rem] text-[var(--def)]">Download
+                        starter HTML</button>
+                </div>
+            </section>
 
             <div class="mt-8 rounded-[1rem] bg-[var(--info)] p-4 text-[1.4rem] text-white">I try to make this page as
                 reader oriented as I can. Suggestions are welcome on <a href="https://github.com/asvvvad/mono-color/issues"
