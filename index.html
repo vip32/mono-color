@@ -36,20 +36,44 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/asvvvad1/mono-color@1.2/dark.min.css" media="none" id="dark-theme">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/asvvvad1/mono-color@1.2/mono.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/asvvvad1/mono-color@1.2/color.min.css">
+    <style id="monokai-theme" media="none">
+        :root {
+            font-size: 62.5%;
+            --fg: #f8f8f2;
+            --h: #f6f0cc;
+            --bg: #221f22;
+            --b: #4f4a56;
+            --p: #f92672;
+            --def: #2f2a33;
+            --gray: #75715e;
+            --accent: #ae81ff;
+            --warning: #e6db74;
+            --error: #fd971f;
+            --success: #a6e22e;
+            --info: #66d9ef
+        }
+    </style>
     <!-- <link rel="stylesheet" href="light.min.css" media="" id="light-theme">
     <link rel="stylesheet" href="dark.min.css" media="none" id="dark-theme">
     <link rel="stylesheet" href="mono.min.css">
     <link rel="stylesheet" href="color.min.css"> -->
     <script>
+        function setTheme(activeThemeId) {
+            var themeIds = ["light-theme", "dark-theme", "monokai-theme"];
+            themeIds.forEach(function (themeId) {
+                document.getElementById(themeId).media = themeId === activeThemeId ? "" : "none";
+            });
+        }
+
         function toggleTheme() {
-            var dark = document.getElementById("dark-theme");
             var light = document.getElementById("light-theme");
-            if (light.media == "none") {
-                light.media = ""
-                dark.media = "none"
+            var dark = document.getElementById("dark-theme");
+            if (light.media !== "none") {
+                setTheme("dark-theme");
+            } else if (dark.media !== "none") {
+                setTheme("monokai-theme");
             } else {
-                light.media = "none"
-                dark.media = ""
+                setTheme("light-theme");
             }
         }
     </script>
