@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>mono/color - Tailwind Edition</title>
+
+    <script>
+        window.tailwind = window.tailwind || {};
+        window.tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['ui-sans-serif', 'system-ui', 'sans-serif'],
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace']
+                    }
+                }
+            }
+        };
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        :root {
+            font-size: 62.5%;
+        }
+
+        body[data-theme="light"] {
+            --fg: #555;
+            --h: #444;
+            --bg: #fefefe;
+            --b: #ccc;
+            --p: #000;
+            --def: #eee;
+            --gray: #ccc;
+            --accent: #fa0;
+            --warning: #ffd600;
+            --error: #d50000;
+            --success: #00c853;
+            --info: #2962ff;
+        }
+
+        body[data-theme="dark"] {
+            --fg: #aaa;
+            --h: #efefef;
+            --bg: #000;
+            --b: #333;
+            --p: #eee;
+            --def: #121212;
+            --gray: #777;
+            --accent: #fa0;
+            --warning: #ffd600;
+            --error: #d50000;
+            --success: #00c853;
+            --info: #2962ff;
+        }
+
+        body[data-theme="monokai"] {
+            --fg: #f8f8f2;
+            --h: #f6f0cc;
+            --bg: #221f22;
+            --b: #4f4a56;
+            --p: #f92672;
+            --def: #2f2a33;
+            --gray: #75715e;
+            --accent: #ae81ff;
+            --warning: #e6db74;
+            --error: #fd971f;
+            --success: #a6e22e;
+            --info: #66d9ef;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: var(--h);
+            font-family: ui-sans-serif, system-ui, sans-serif;
+            line-height: 1.2;
+        }
+
+        a {
+            color: var(--p);
+        }
+
+        a:hover,
+        button:hover,
+        input[type="submit"]:hover {
+            opacity: .8;
+            cursor: pointer;
+        }
+
+        code,
+        samp,
+        kbd {
+            padding: .4rem;
+            font-size: 80%;
+            color: var(--fg);
+            background-color: var(--def);
+            white-space: nowrap;
+            border: solid .1rem var(--b);
+        }
+
+        kbd {
+            border-bottom: .3rem solid var(--b);
+            padding: .3rem .4em;
+        }
+
+        pre {
+            overflow: auto;
+            margin: .5rem 0;
+        }
+
+        pre>code,
+        pre>samp {
+            display: block;
+            white-space: pre;
+            border: 0;
+            font-style: normal;
+            font-size: 85%;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            padding: 1rem;
+            margin: 0;
+            max-width: 100%;
+            color: var(--fg);
+            background-color: var(--def);
+            text-decoration: none;
+        }
+
+        pre>samp {
+            line-height: 1.1;
+        }
+
+        .switch>.hidden,
+        .switch:hover>.shown {
+            display: none;
+        }
+
+        .switch:hover>.hidden {
+            display: inline;
+        }
+
+        dialog {
+            width: min(56rem, calc(100vw - 4rem));
+            border: .1rem solid var(--b);
+            border-radius: 1rem;
+            padding: 0;
+            background: var(--def);
+            color: var(--fg);
+        }
+
+        dialog::backdrop {
+            background: rgba(0, 0, 0, .55);
+        }
+    </style>
+
+    <script>
+        const themes = ["light", "dark", "monokai"];
+
+        function toggleTheme() {
+            const body = document.body;
+            const current = body.dataset.theme;
+            const index = themes.indexOf(current);
+            const next = themes[(index + 1) % themes.length];
+            body.dataset.theme = next;
+            document.getElementById("theme-label").textContent = next;
+        }
+
+        function openSampleDialog() {
+            const dialog = document.getElementById("sample-dialog");
+            if (dialog.open) {
+                return;
+            }
+            if (typeof dialog.showModal === "function") {
+                dialog.showModal();
+                return;
+            }
+            dialog.setAttribute("open", "");
+        }
+
+        function closeSampleDialog() {
+            const dialog = document.getElementById("sample-dialog");
+            if (typeof dialog.close === "function") {
+                dialog.close();
+                return;
+            }
+            dialog.removeAttribute("open");
+        }
+
+        window.addEventListener("DOMContentLoaded", function () {
+            document.getElementById("theme-label").textContent = document.body.dataset.theme;
+        });
+    </script>
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+</head>
+
+<body data-theme="light" class="m-0 font-mono text-[1.8rem] leading-[1.6] text-[var(--fg)] bg-[var(--bg)]">
+    <div class="h-screen bg-[var(--def)] text-center">
+        <div class="relative top-[40%] -translate-y-[45%]">
+            <h1 class="m-0 text-[4rem] font-bold">mono/color</h1>
+            <p class="mt-4">Very small, responsive, dual-themed CSS-only framework</p>
+            <div class="my-4 inline-block"><a href="#intro"
+                    class="inline-block rounded-[2rem] bg-[var(--p)] px-4 py-2 text-[85%] text-[var(--def)] no-underline"><b>Discover</b></a>
+            </div>
+            <div class="my-4 inline-block"><a target="_blank" href="https://github.com/asvvvad/mono-color/releases/latest"
+                    class="inline-block rounded-[2rem] bg-[var(--p)] px-4 py-2 text-[85%] text-[var(--def)] no-underline"><b>Download</b></a>
+            </div>
+            <div class="my-4 inline-block"><a target="_blank" href="https://github.com/asvvvad/mono-color"
+                    class="inline-block rounded-[2rem] bg-[var(--p)] px-4 py-2 text-[85%] text-[var(--def)] no-underline"><b>Github</b></a>
+            </div>
+        </div>
+    </div>
+
+    <div class="relative mx-auto w-full max-w-[70rem] sm:w-[90%]">
+        <button onclick="toggleTheme()"
+            class="sticky left-full top-8 z-[999] m-4 block rounded-[2rem] bg-[var(--p)] px-4 py-2 text-[85%] text-[var(--def)]">
+            Toggle Theme <span class="text-[1.2rem] lowercase">(<span id="theme-label">light</span>)</span>
+        </button>
+
+        <div class="mx-auto w-[calc(100%-5rem)] overflow-hidden">
+            <h1 id="intro" class="text-[4rem] font-bold">mono/color <span
+                    class="rounded-[1rem] bg-[var(--def)] p-[.4rem] text-[1.4rem] text-[var(--fg)]">v1.2</span></h1>
+            <p>mono/color is a very small yet full-featured, simple and beautiful CSS-only framework built with
+                responsivity, readability, modularity, and a dual-theme in mind.</p>
+            <p>It's perfect for a blog or a documentation site and can be used for anything else as well.<br>It's very
+                responsive and looks neat on any resolution.<br>Based on <a href="https://github.com/any-code/starveling/">Starveling</a>
+                and <a href="https://ajusa.github.io/lit/">lit</a>, providing only necessary elements while still
+                looking great.</p>
+            <p>mono/color is also hosted on Github and you can contribute to it or fork it and make your own style as
+                you like!</p>
+            <a class="github-button" href="https://github.com/asvvvad/mono-color/" data-size="large"
+                data-show-count="true" aria-label="Star asvvvad/mono-color on GitHub">Star</a>
+            <a class="github-button" href="https://github.com/asvvvad/mono-color/fork" data-size="large"
+                data-show-count="true" aria-label="Fork asvvvad/mono-color on GitHub">Fork</a>
+
+            <p>mono/color is split into <em>two</em>:</p>
+            <div class="grid gap-4 md:grid-cols-2">
+                <div class="mt-4 bg-[var(--def)] p-4 text-[var(--fg)]">
+                    <h2 class="my-4 text-[3rem] font-bold">mono<span class="text-[1.2rem]">.css</span> <span
+                            class="switch rounded-[1rem] bg-[var(--p)] p-[.4rem] text-[1.4rem] text-[var(--def)]"><span
+                                class="shown">630b</span><span class="hidden">&lt;1.5kb</span></span></h2>
+                    <h4 class="mr-2 inline">dark<span class="text-[1.2rem]">.css</span> <span
+                            class="rounded-[1rem] bg-[var(--p)] p-[.4rem] text-[1.2rem] text-[var(--def)]">83b</span>
+                    </h4>
+                    <h4 class="inline">light<span class="text-[1.2rem]">.css</span> <span
+                            class="rounded-[1rem] bg-[var(--p)] p-[.4rem] text-[1.2rem] text-[var(--def)]">83b</span>
+                    </h4>
+                    <h5 class="my-4">total <span class="switch rounded-[1rem] bg-[var(--p)] p-[.4rem] text-[1.2rem] text-[var(--def)]"><span
+                                class="shown">796b</span><span class="hidden">1.6kb</span></span></h5>
+                    <p>Can be used alone, it includes dark &amp; light theme with no colors, only default html elements
+                        with a basic button.</p>
+                </div>
+
+                <div class="mt-4 bg-[var(--success)] p-4 text-white">
+                    <h2 class="my-4 text-[3rem] font-bold text-white">color<span class="text-[1.2rem]">.css</span> <span
+                            class="switch rounded-[1rem] bg-white p-[.4rem] text-[1.4rem] text-[var(--success)]"><span
+                                class="shown">736b</span><span class="hidden">1.9kb</span></span></h2>
+                    <h5 class="my-4">total <span
+                            class="switch rounded-[1rem] bg-white p-[.4rem] text-[1.2rem] text-[var(--success)]"><span
+                                class="shown">1.3kb</span><span class="hidden">3.5kb</span></span></h5>
+                    <p class="text-white">Adds <a href="#grid" class="text-white underline">grids</a>, <a href="#cards"
+                            class="text-white underline">cards</a>, <a href="#colors" class="text-white underline">colors</a>,
+                        <a href="#utilities" class="text-white underline">useful utilities</a> and <a href="#badges"
+                            class="text-white underline">badges</a>.</p>
+                </div>
+            </div>
+
+            <div class="my-4 rounded-[1rem] bg-[var(--warning)] p-4 text-black">
+                Note! <span class="text-[1.4rem]">These are gzipped sizes. Hover to see the minified size</span>
+            </div>
+
+            <hr class="border-[.1rem] border-[var(--b)]">
+            <h1 id="usage" class="text-[4rem] font-bold">Usage:</h1>
+            <p>The following code snippets will use jsDelivr CDN but you can download and host the css files wherever
+                you like.</p>
+
+            <details>
+                <summary><b>mono only</b></summary>
+                <pre><code>&lt;link rel="stylesheet" href="light.min.css" media=""&gt;
+&lt;link rel="stylesheet" href="dark.min.css" media="(prefers-color-scheme: dark)"&gt;
+&lt;link rel="stylesheet" href="mono.min.css"&gt;</code></pre>
+            </details>
+            <br>
+            <details>
+                <summary><b>mono+color</b></summary>
+                <pre><code>&lt;link rel="stylesheet" href="light.min.css" media=""&gt;
+&lt;link rel="stylesheet" href="dark.min.css" media="(prefers-color-scheme: dark)"&gt;
+&lt;link rel="stylesheet" href="mono-color.min.css"&gt;</code></pre>
+            </details>
+            <br>
+            <details>
+                <summary><b>Switching Dark/Light/Monokai theme</b></summary>
+                <p>In this Tailwind version the active theme is controlled by setting <code>data-theme</code> on the
+                    <code>&lt;body&gt;</code> element.</p>
+                <pre><code>const themes = ["light", "dark", "monokai"];
+body.dataset.theme = themes[(index + 1) % themes.length];</code></pre>
+            </details>
+
+            <h1 id="components" class="mt-8 text-[4rem] font-bold">Components:</h1>
+            <h1 id="mono" class="text-[4rem] font-bold">mono</h1>
+            <hr class="border-[.1rem] border-[var(--b)]">
+
+            <h2 id="typography" class="text-[3.2rem] font-bold">Typography</h2>
+            <h1 class="text-[4rem] font-bold">Heading 1</h1>
+            <h2 class="text-[3.2rem] font-bold">Heading 2</h2>
+            <h3 class="text-[2.8rem] font-bold">Heading 3</h3>
+            <h4 class="text-[2.2rem] font-bold text-[var(--fg)]">Heading 4</h4>
+            <h5 class="text-[1.8rem] font-bold text-[var(--fg)]">Heading 5</h5>
+            <h6 class="text-[1.6rem] font-bold text-[var(--fg)]">Heading 6</h6>
+
+            <h2 id="codeBlock" class="mt-8 text-[3.2rem] font-bold">Code Block</h2>
+            <p><code>inline code;</code> <samp>inline samp;</samp> and kbd: <kbd>ctrl</kbd> <kbd>c</kbd></p>
+            <pre><code>&lt;pre&gt;&lt;code&gt;
+&lt;h2&gt;Code Block Example&lt;/h2&gt;
+&lt;/code&gt;&lt;/pre&gt;</code></pre>
+
+            <h2 class="mt-8 text-[3.2rem] font-bold">Blockquote</h2>
+            <blockquote class="border-l-[.4rem] border-[var(--b)] p-4">
+                You're <em>not</em> a moron if you use default browser styles.
+            </blockquote>
+
+            <h2 id="tables" class="mt-8 text-[3.2rem] font-bold">Tables</h2>
+            <div class="overflow-auto">
+                <table class="w-full border-collapse text-[90%]">
+                    <thead>
+                        <tr>
+                            <th class="border-b border-[var(--b)] p-4 text-left">Name</th>
+                            <th class="border-b border-[var(--b)] p-4 text-left">Username</th>
+                            <th class="border-b border-[var(--b)] p-4 text-left">Email</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="border-b border-[var(--b)] p-4">Lorem Ipsum</td>
+                            <td class="border-b border-[var(--b)] p-4">lorem</td>
+                            <td class="border-b border-[var(--b)] p-4">email@example.com</td>
+                        </tr>
+                        <tr>
+                            <td class="border-b border-[var(--b)] p-4">Dolor Sit</td>
+                            <td class="border-b border-[var(--b)] p-4">dolor</td>
+                            <td class="border-b border-[var(--b)] p-4">dolor@example.com</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2 id="forms" class="mt-8 text-[3.2rem] font-bold">Forms</h2>
+            <form class="overflow-auto text-center whitespace-nowrap">
+                <label>Email<br>
+                    <input type="email" placeholder="email"
+                        class="m-2 inline border-0 bg-[var(--def)] px-4 py-2 text-[85%] text-[var(--fg)]"><br>
+                    <input type="password" placeholder="password"
+                        class="m-2 inline border-0 bg-[var(--def)] px-4 py-2 text-[85%] text-[var(--fg)]"><br>
+                    <label>Additional Info<br>
+                        <select class="m-2 inline border-0 bg-[var(--def)] px-4 py-2 text-[85%] text-[var(--fg)]">
+                            <option>Question</option>
+                            <option>Compliment</option>
+                            <option>Problem</option>
+                        </select>
+                    </label><br>
+                </label><br>
+                <textarea placeholder="Some information here"
+                    class="my-2 block h-[15rem] w-full bg-[var(--def)] p-4 text-[85%] text-[var(--fg)]"></textarea><br>
+                <input type="submit" value="Submit"
+                    class="m-2 inline border-0 bg-[var(--def)] px-4 py-2 text-[85%] text-[var(--fg)]">
+            </form>
+
+            <h2 id="buttons" class="mt-8 text-[3.2rem] font-bold">Buttons</h2>
+            <div>
+                <a href="#" class="m-2 inline border-0 bg-[var(--def)] px-4 py-2 text-[85%] text-[var(--fg)] no-underline">Link button</a>
+                <button class="m-2 inline border-0 bg-[var(--def)] px-4 py-2 text-[85%] text-[var(--fg)]">Regular Button</button>
+                <button class="m-2 inline border-0 bg-[var(--p)] px-4 py-2 text-[85%] text-[var(--def)]">Primary Button</button>
+                <button onclick="openSampleDialog()"
+                    class="m-2 inline rounded-[2rem] border-0 bg-[var(--accent)] px-4 py-2 text-[85%] text-white">Open Sample Dialog</button>
+            </div>
+
+            <h1 id="color" class="mt-8 text-[4rem] font-bold">color</h1>
+            <hr class="border-[.1rem] border-[var(--b)]">
+
+            <h2 id="grid" class="text-[3.2rem] font-bold">Grid</h2>
+            <p>Grids are defined on a 12 column scale. They collapse on mobile to full width.</p>
+            <div class="space-y-3 text-center text-[.8em] tracking-[.1rem]">
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-12">
+                    <div class="bg-[var(--p)] p-2 text-[var(--def)] md:col-span-1">1 col</div>
+                    <div class="bg-[var(--p)] p-2 text-[var(--def)] md:col-span-11">11 col</div>
+                </div>
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-12">
+                    <div class="bg-[var(--p)] p-2 text-[var(--def)] md:col-span-2">2 col</div>
+                    <div class="bg-[var(--p)] p-2 text-[var(--def)] md:col-span-10">10 col</div>
+                </div>
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-12">
+                    <div class="bg-[var(--p)] p-2 text-[var(--def)] md:col-span-3">3 col</div>
+                    <div class="bg-[var(--p)] p-2 text-[var(--def)] md:col-span-9">9 col</div>
+                </div>
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-12">
+                    <div class="bg-[var(--p)] p-2 text-[var(--def)] md:col-span-4">4 col</div>
+                    <div class="bg-[var(--p)] p-2 text-[var(--def)] md:col-span-8">8 col</div>
+                </div>
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-12">
+                    <div class="bg-[var(--p)] p-2 text-[var(--def)] md:col-span-5">5 col</div>
+                    <div class="bg-[var(--p)] p-2 text-[var(--def)] md:col-span-7">7 col</div>
+                </div>
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-12">
+                    <div class="bg-[var(--p)] p-2 text-[var(--def)] md:col-span-6">6 col</div>
+                    <div class="bg-[var(--p)] p-2 text-[var(--def)] md:col-span-6">6 col</div>
+                </div>
+            </div>
+
+            <h2 id="utilities" class="mt-8 text-[3.2rem] font-bold">Utilities</h2>
+            <h3 class="text-[2.8rem] font-bold">Size classes:</h3>
+            <span class="text-[4rem]">mega</span>
+            <span class="text-[2rem]">large</span>
+            <span class="text-[1.8rem]">normal</span>
+            <span class="text-[1.4rem]">small</span>
+            <span class="text-[1.2rem]">nano</span>
+
+            <h3 class="mt-8 text-[2.8rem] font-bold">Spacing and alignment:</h3>
+            <div class="text-center">tacenter</div>
+            <div class="text-left">taleft</div>
+            <div class="text-right">taright</div>
+
+            <div id="colors" class="mt-8">
+                <h3 class="text-[2.8rem] font-bold">Colors</h3>
+                <h2 class="text-[3.2rem] font-bold">Text Colors</h2>
+                <span class="px-4 text-[var(--accent)]">accent</span>
+                <span class="px-4 text-[var(--info)]">info</span>
+                <span class="px-4 text-[var(--success)]">success</span>
+                <span class="px-4 text-[var(--warning)]">warning</span>
+                <span class="px-4 text-[var(--error)]">error</span>
+                <span class="bg-white px-4 text-black">black</span>
+                <span class="bg-black px-4 text-white">white</span>
+                <span class="px-4 text-[var(--gray)]">gray</span>
+
+                <h2 class="mt-8 text-[3.2rem] font-bold">Background Colors</h2>
+                <div class="m-2 inline-block bg-[var(--accent)] px-4 py-2 text-white">bg-accent</div>
+                <div class="m-2 inline-block bg-[var(--info)] px-4 py-2 text-white">bg-info</div>
+                <div class="m-2 inline-block bg-[var(--success)] px-4 py-2 text-white">bg-success</div>
+                <div class="m-2 inline-block bg-[var(--warning)] px-4 py-2 text-black">bg-warning</div>
+                <div class="m-2 inline-block bg-[var(--error)] px-4 py-2 text-white">bg-error</div>
+                <div class="m-2 inline-block bg-black px-4 py-2 text-white">bg-black</div>
+                <div class="m-2 inline-block bg-white px-4 py-2 text-black">bg-white</div>
+                <div class="m-2 inline-block bg-[var(--gray)] px-4 py-2 text-black">bg-gray</div>
+
+                <h2 class="mt-8 text-[3.2rem] font-bold">Border Colors</h2>
+                <div class="m-2 inline-block border border-[var(--accent)] px-4 py-2">border accent</div>
+                <div class="m-2 inline-block border border-[var(--info)] px-4 py-2">border info</div>
+                <div class="m-2 inline-block border border-[var(--success)] px-4 py-2">border success</div>
+                <div class="m-2 inline-block border border-[var(--warning)] px-4 py-2">border warning</div>
+                <div class="m-2 inline-block border border-[var(--error)] px-4 py-2">border error</div>
+                <div class="m-2 inline-block border border-white px-4 py-2">border white</div>
+                <div class="m-2 inline-block border border-black px-4 py-2">border black</div>
+
+                <h5 class="mt-8 text-[1.8rem] font-bold text-[var(--fg)]">Horizontal Rules</h5>
+                <hr class="my-2 border-[var(--accent)]">
+                <hr class="my-2 border-[var(--info)]">
+                <hr class="my-2 border-[var(--success)]">
+                <hr class="my-2 border-[var(--warning)]">
+                <hr class="my-2 border-[var(--error)]">
+
+                <h2 class="mt-8 text-[3.2rem] font-bold">Colorful Buttons</h2>
+                <button class="m-2 inline border-0 bg-[var(--def)] px-4 py-2 text-[85%] text-[var(--fg)]">Default Button</button>
+                <button class="m-2 inline border-0 bg-[var(--p)] px-4 py-2 text-[85%] text-[var(--def)]">Primary Button</button>
+                <button class="m-2 inline border-0 bg-[var(--accent)] px-4 py-2 text-[85%] text-white">Accent Button</button>
+                <button class="m-2 inline border-0 bg-[var(--info)] px-4 py-2 text-[85%] text-white">Info Button</button>
+                <button class="m-2 inline border-0 bg-[var(--success)] px-4 py-2 text-[85%] text-white">Success Button</button>
+                <button class="m-2 inline border-0 bg-[var(--warning)] px-4 py-2 text-[85%] text-black">Warning Button</button>
+                <button class="m-2 inline border-0 bg-[var(--error)] px-4 py-2 text-[85%] text-white">Error Button</button>
+
+                <h2 class="mt-8 text-[3.2rem] font-bold">Rounded Buttons</h2>
+                <button class="m-2 inline rounded-[1rem] bg-[var(--def)] px-4 py-2 text-[85%] text-[var(--fg)]">Default Button</button>
+                <button class="m-2 inline rounded-[1rem] bg-[var(--p)] px-4 py-2 text-[85%] text-[var(--def)]">Primary Button</button>
+                <button class="m-2 inline rounded-[1rem] bg-[var(--accent)] px-4 py-2 text-[85%] text-white">Accent Button</button>
+                <button class="m-2 inline rounded-[1rem] bg-[var(--info)] px-4 py-2 text-[85%] text-white">Info Button</button>
+                <button class="m-2 inline rounded-[1rem] bg-[var(--success)] px-4 py-2 text-[85%] text-white">Success Button</button>
+                <button class="m-2 inline rounded-[1rem] bg-[var(--warning)] px-4 py-2 text-[85%] text-black">Warning Button</button>
+                <button class="m-2 inline rounded-[1rem] bg-[var(--error)] px-4 py-2 text-[85%] text-white">Error Button</button>
+
+                <h2 id="cards" class="mt-8 text-[3.2rem] font-bold">Cards</h2>
+                <div class="mt-4 bg-[var(--gray)] p-4 text-black">
+                    <h2 class="text-[3.2rem] font-bold text-black">Simple Card</h2>
+                    <p>Here is some text that generally describes the card, or something about it.</p>
+                    <button class="m-2 inline border-0 bg-black px-4 py-2 text-[85%] text-white">Okay</button>
+                    <button class="m-2 inline border-0 bg-white px-4 py-2 text-[85%] text-black">Cancel</button>
+                </div>
+
+                <p>Cards are usually nested within grids to create powerful display systems, like below.</p>
+                <div class="grid gap-4 md:grid-cols-3">
+                    <div class="mt-4 bg-[var(--info)] p-4 text-white">
+                        <h2 class="text-[3.2rem] font-bold text-white">Card Title</h2>
+                        <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit.</p>
+                        <button class="m-2 inline border-0 bg-[var(--p)] px-4 py-2 text-[85%] text-[var(--def)]">Okay</button>
+                        <button class="m-2 inline border-0 bg-[var(--def)] px-4 py-2 text-[85%] text-[var(--fg)]">Cancel</button>
+                    </div>
+                    <div class="mt-4 bg-[var(--warning)] p-4 text-black">
+                        <h2 class="text-[3.2rem] font-bold text-black">Card Title</h2>
+                        <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit.</p>
+                        <button class="m-2 inline border-0 bg-[var(--p)] px-4 py-2 text-[85%] text-[var(--def)]">Okay</button>
+                        <button class="m-2 inline border-0 bg-[var(--def)] px-4 py-2 text-[85%] text-[var(--fg)]">Cancel</button>
+                    </div>
+                    <div class="mt-4 bg-[var(--success)] p-4 text-white">
+                        <h2 class="text-[3.2rem] font-bold text-white">Card Title</h2>
+                        <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit.</p>
+                        <button class="m-2 inline border-0 bg-[var(--p)] px-4 py-2 text-[85%] text-[var(--def)]">Okay</button>
+                        <button class="m-2 inline border-0 bg-[var(--def)] px-4 py-2 text-[85%] text-[var(--fg)]">Cancel</button>
+                    </div>
+                </div>
+
+                <div id="alerts" class="mt-8">
+                    <h3 class="text-[2.8rem] font-bold">Alerts</h3>
+                    <div class="rounded-[1rem] bg-[var(--error)] p-4 text-[1.4rem] text-white"><span
+                            class="text-[2rem]">Oh no!</span><br>This is an example of an error alert</div><br>
+                    <div class="rounded-[1rem] bg-[var(--success)] p-4 text-[1.4rem] text-white"><span
+                            class="text-[2rem]">Success!</span><br>This is an example of a success alert</div><br>
+                    <blockquote class="rounded-[1rem] border-l-[.4rem] border-[var(--p)] bg-[var(--info)] p-4 text-[1.4rem] text-white"><span
+                            class="text-[2rem]">Tip!</span><br>This is an example of an info alert</blockquote>
+                </div>
+
+                <div id="badges" class="mt-8">
+                    <h3 class="text-[2.8rem] font-bold">Badges</h3>
+                    <h2 class="text-[3.2rem] font-bold">Heading Badge <span
+                            class="rounded-[2rem] bg-[var(--warning)] p-[.4rem] text-[1.4rem] text-black">New!</span>
+                    </h2>
+                    <button class="rounded-[2rem] bg-[var(--info)] px-4 py-2 text-[85%] text-white">Button Badge <span
+                            class="rounded-[2rem] bg-white p-[.4rem] text-[1.2rem] text-[var(--info)]"><b>500</b></span></button>
+                </div>
+            </div>
+
+            <div class="mt-8 rounded-[1rem] bg-[var(--info)] p-4 text-[1.4rem] text-white">I try to make this page as
+                reader oriented as I can. Suggestions are welcome on <a href="https://github.com/asvvvad/mono-color/issues"
+                    class="text-white underline">Github</a>.</div>
+        </div>
+
+        <footer class="mt-20 bg-[var(--def)] p-12 text-center text-[1.8rem]">
+            <a href="https://github.com/asvvvad/mono-color">mono/color</a> by <a href="https://asvvvad.eu.org">asvvvad</a>/2020
+        </footer>
+    </div>
+
+    <dialog id="sample-dialog">
+        <div class="p-6">
+            <div class="mb-4 flex items-center justify-between gap-4">
+                <h3 class="m-0 text-[2.2rem] font-bold">Sample Dialog</h3>
+                <button onclick="closeSampleDialog()"
+                    class="inline rounded-[1rem] border border-[var(--b)] bg-[var(--def)] px-3 py-2 text-[1.2rem] text-[var(--fg)]">Esc</button>
+            </div>
+            <p class="m-0 text-[1.6rem]">This is a demo dialog component using the same theme tokens as the page.</p>
+            <div class="mt-4 rounded-[1rem] bg-[var(--bg)] p-4">
+                <label class="block text-[1.4rem]">Message</label>
+                <input type="text" value="Looks like mono/color, powered by Tailwind."
+                    class="mt-2 w-full border-0 bg-[var(--def)] px-4 py-2 text-[85%] text-[var(--fg)]">
+            </div>
+            <div class="mt-6 flex flex-wrap gap-3">
+                <button onclick="closeSampleDialog()"
+                    class="inline rounded-[2rem] border-0 bg-[var(--def)] px-4 py-2 text-[85%] text-[var(--fg)]">Cancel</button>
+                <button onclick="closeSampleDialog()"
+                    class="inline rounded-[2rem] border-0 bg-[var(--p)] px-4 py-2 text-[85%] text-[var(--def)]">Confirm</button>
+            </div>
+        </div>
+    </dialog>
+</body>
+
+</html>
