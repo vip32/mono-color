@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>mono/color dashboard - Tailwind Edition</title>
+    <script>
+        window.tailwind = window.tailwind || {};
+        window.tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ["ui-sans-serif", "system-ui", "sans-serif"],
+                        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"]
+                    }
+                }
+            }
+        };
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root { font-size: 62.5%; --header-height: 7.6rem; --sidebar-width: 28rem; --sidebar-width-collapsed: 9.2rem; --surface-glow: 0 1.6rem 4rem rgba(0,0,0,.12); }
+        body[data-theme="light"] { --fg:#555; --h:#444; --bg:#fefefe; --b:#ccc; --p:#000; --def:#eee; --gray:#ccc; --accent:#fa0; --warning:#ffd600; --error:#d50000; --success:#00c853; --info:#2962ff; }
+        body[data-theme="dark"] { --fg:#aaa; --h:#efefef; --bg:#000; --b:#333; --p:#eee; --def:#121212; --gray:#777; --accent:#fa0; --warning:#ffd600; --error:#d50000; --success:#00c853; --info:#2962ff; }
+        body[data-theme="monokai"] { --fg:#f8f8f2; --h:#f6f0cc; --bg:#221f22; --b:#4f4a56; --p:#f92672; --def:#2f2a33; --gray:#75715e; --accent:#ae81ff; --warning:#e6db74; --error:#fd971f; --success:#a6e22e; --info:#66d9ef; }
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { margin:0; min-height:100vh; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:1.8rem; line-height:1.6; color:var(--fg); background:radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 11%, transparent), transparent 34%), radial-gradient(circle at top right, color-mix(in srgb, var(--info) 10%, transparent), transparent 28%), linear-gradient(180deg, color-mix(in srgb, var(--def) 92%, var(--bg) 8%), var(--bg)); transition:background-color .35s ease, color .35s ease; }
+        body::before { content:""; position:fixed; inset:0; pointer-events:none; background-image:linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px); background-size:100% 4px; opacity:.3; }
+        h1,h2,h3,h4 { margin:0; color:var(--h); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; line-height:1.2; }
+        p { margin:0; }
+        a { color:var(--p); }
+        button,input,select,textarea { font:inherit; }
+        button:hover,a:hover { cursor:pointer; }
+        code,samp,kbd { padding:.4rem; font-size:80%; color:var(--fg); background-color:var(--def); white-space:nowrap; border:solid .1rem var(--b); }
+        pre { overflow:auto; margin:0; }
+        pre>code { display:block; white-space:pre; border:0; font-style:normal; font-size:85%; padding:1.4rem; margin:0; max-width:100%; color:var(--fg); background-color:var(--bg); }
+        dialog { width:min(56rem, calc(100vw - 4rem)); border:.1rem solid var(--b); border-radius:1.6rem; padding:0; background:var(--def); color:var(--fg); box-shadow:var(--surface-glow); }
+        dialog::backdrop { background:rgba(0,0,0,.55); }
+        dialog[open] { animation:dialogIn .2s ease-out; }
+        @keyframes dialogIn { from { opacity:0; transform:translateY(.8rem) scale(.98); } to { opacity:1; transform:translateY(0) scale(1); } }
+        .surface { border:.1rem solid var(--b); background:color-mix(in srgb, var(--def) 92%, var(--bg) 8%); box-shadow:var(--surface-glow); }
+        .motion-card { transition:transform .25s ease, box-shadow .25s ease, filter .25s ease, border-color .25s ease; }
+        .motion-card:hover { transform:translateY(-.3rem); filter:brightness(1.02); border-color:color-mix(in srgb, var(--p) 44%, var(--b) 56%); }
+        .reveal { opacity:0; transform:translateY(1.6rem); transition:opacity .45s ease, transform .45s ease; }
+        .reveal.is-visible { opacity:1; transform:translateY(0); }
+        .app-header { position:fixed; inset:0 0 auto 0; z-index:50; height:var(--header-height); border-bottom:.1rem solid var(--b); background:color-mix(in srgb, var(--def) 88%, transparent); backdrop-filter:blur(20px); }
+        .app-sidebar { position:fixed; top:var(--header-height); left:0; bottom:0; z-index:40; width:var(--sidebar-width); border-right:.1rem solid var(--b); background:color-mix(in srgb, var(--def) 95%, transparent); transform:translateX(0); transition:width .25s ease, transform .25s ease; overflow:hidden; }
+        .app-main { min-height:100vh; padding:calc(var(--header-height) + 2.4rem) 2.4rem 2.4rem calc(var(--sidebar-width) + 2.4rem); transition:padding-left .25s ease; }
+        body.sidebar-collapsed .app-sidebar { width:var(--sidebar-width-collapsed); }
+        body.sidebar-collapsed .app-main { padding-left:calc(var(--sidebar-width-collapsed) + 2.4rem); }
+        body.sidebar-collapsed .sidebar-label, body.sidebar-collapsed .sidebar-block, body.sidebar-collapsed .sidebar-footer, body.sidebar-collapsed .nav-copy, body.sidebar-collapsed .brand-copy { display:none; }
+        body.sidebar-collapsed .nav-link { justify-content:center; padding-inline:0; }
+        body.sidebar-mobile-open { overflow:hidden; }
+        .sidebar-overlay { position:fixed; inset:var(--header-height) 0 0 0; z-index:35; background:rgba(0,0,0,.5); opacity:0; pointer-events:none; transition:opacity .2s ease; }
+        body.sidebar-mobile-open .sidebar-overlay { opacity:1; pointer-events:auto; }
+        .nav-link[aria-current="true"] { background:var(--p); color:var(--def); border-color:var(--p); }
+        .nav-link[aria-current="true"] .nav-glyph { background:color-mix(in srgb, var(--def) 16%, transparent); }
+        .status-dot { display:inline-block; width:.8rem; height:.8rem; border-radius:999px; }
+        .metric-bar { height:.8rem; border-radius:999px; background:color-mix(in srgb, var(--b) 45%, transparent); overflow:hidden; }
+        .metric-bar>span { display:block; height:100%; border-radius:inherit; }
+        .ui-tab-btn[aria-selected="true"] { background:var(--p); color:var(--def); border-color:var(--p); }
+        .field,.select,.textarea { width:100%; border:.1rem solid var(--b); border-radius:1.2rem; background:color-mix(in srgb, var(--bg) 82%, var(--def) 18%); color:var(--fg); padding:1.2rem 1.4rem; transition:border-color .2s ease, box-shadow .2s ease, background-color .2s ease; }
+        .field:focus,.select:focus,.textarea:focus,.control-btn:focus,.nav-link:focus,.ghost-btn:focus,.solid-btn:focus { outline:.2rem solid color-mix(in srgb, var(--info) 72%, transparent); outline-offset:.2rem; }
+        .field:focus,.select:focus,.textarea:focus { border-color:var(--p); }
+        .control-btn,.ghost-btn,.solid-btn { border-radius:999px; padding:1rem 1.6rem; transition:transform .2s ease, opacity .2s ease, filter .2s ease, border-color .2s ease; }
+        .control-btn:hover,.ghost-btn:hover,.solid-btn:hover { transform:translateY(-.1rem); opacity:.92; }
+        .control-btn,.ghost-btn { border:.1rem solid var(--b); background:color-mix(in srgb, var(--bg) 86%, var(--def) 14%); color:var(--fg); }
+        .solid-btn { border:.1rem solid var(--p); background:var(--p); color:var(--def); }
+        .token-swatch { width:1.6rem; height:1.6rem; border-radius:999px; border:.1rem solid color-mix(in srgb, var(--fg) 18%, transparent); }
+        .table-grid { display:grid; gap:.1rem; background:var(--b); border:.1rem solid var(--b); border-radius:1.6rem; overflow:hidden; }
+        .table-grid>div { background:color-mix(in srgb, var(--def) 94%, var(--bg) 6%); padding:1.4rem; }
+        .table-grid.table-4 { grid-template-columns:1.3fr .9fr .8fr .7fr; }
+        .table-grid.table-3 { grid-template-columns:1.1fr .8fr .8fr; }
+        .toast-stack { display:grid; gap:1rem; }
+        .header-brand { display:flex; align-items:center; gap:1.2rem; min-width:0; }
+        .header-search { display:flex; width:100%; max-width:42rem; align-items:center; gap:1rem; border-bottom:.1rem solid color-mix(in srgb, var(--b) 75%, transparent); padding:.8rem 0; }
+        .header-search input { width:100%; border:0; background:transparent; padding:0; color:var(--fg); }
+        .header-search input:focus { outline:none; }
+        .header-meta { display:flex; align-items:center; gap:1.2rem; color:var(--gray); font-size:1.2rem; text-transform:uppercase; letter-spacing:.16em; white-space:nowrap; }
+        .surface,
+        .motion-card,
+        .field,
+        .select,
+        .textarea,
+        .ghost-btn,
+        .solid-btn,
+        .control-btn,
+        .nav-link,
+        .nav-glyph,
+        .table-grid,
+        .table-grid > div,
+        .metric-bar,
+        #toast-stack > div,
+        [id^="component-acc-"],
+        dialog,
+        [class*="rounded-full"],
+        [class*="rounded-["] { border-radius:.35rem !important; }
+        .content-main .surface,
+        .content-main .motion-card,
+        .content-main .table-grid,
+        .content-main #toast-stack > div { box-shadow:none; }
+        .content-main .surface { background:color-mix(in srgb, var(--def) 88%, var(--bg) 12%); }
+        .content-main .surface .surface,
+        .content-main .surface .motion-card,
+        .content-main .table-grid,
+        .content-main #toast-stack > div { border-color:color-mix(in srgb, var(--b) 55%, transparent); }
+        .content-main .motion-card:hover { transform:none; filter:none; }
+        @media (max-width:1023px) { .app-sidebar { width:min(30rem, calc(100vw - 3.2rem)); transform:translateX(-100%); } .app-main { padding-left:1.6rem; padding-right:1.6rem; } body.sidebar-collapsed .app-main { padding-left:1.6rem; } body.sidebar-mobile-open .app-sidebar { transform:translateX(0); } body.sidebar-collapsed .sidebar-label, body.sidebar-collapsed .sidebar-block, body.sidebar-collapsed .sidebar-footer, body.sidebar-collapsed .nav-copy, body.sidebar-collapsed .brand-copy { display:initial; } body.sidebar-collapsed .nav-link { justify-content:flex-start; padding-inline:1.2rem; } .header-meta { display:none; } }
+        @media (max-width:767px) { .table-grid.table-4, .table-grid.table-3 { grid-template-columns:1fr; } }
+        @media (prefers-reduced-motion:reduce) { body,.motion-card,.reveal,.app-sidebar,.app-main,.sidebar-overlay,.control-btn,.ghost-btn,.solid-btn,dialog[open] { transition:none !important; animation:none !important; transform:none !important; } html { scroll-behavior:auto; } }
+    </style>
+    <script>
+        const themes = ["light", "dark", "monokai"];
+        const tokenNames = ["--fg", "--h", "--bg", "--b", "--p", "--def", "--gray", "--accent", "--warning", "--error", "--success", "--info"];
+        const themeStorageKey = "mono-color-dashboard-theme";
+        function getStoredTheme() {
+            try {
+                const storedTheme = window.localStorage.getItem(themeStorageKey);
+                return themes.includes(storedTheme) ? storedTheme : null;
+            } catch (error) {
+                return null;
+            }
+        }
+        function setTheme(theme) {
+            document.body.dataset.theme = theme;
+            try {
+                window.localStorage.setItem(themeStorageKey, theme);
+            } catch (error) {
+                // Ignore storage access failures and continue with in-memory theme state.
+            }
+            const label = document.getElementById("theme-label");
+            const badge = document.getElementById("theme-badge");
+            if (label) { label.textContent = theme; }
+            if (badge) { badge.textContent = theme; }
+            updateTokenInspector();
+        }
+        function toggleTheme() {
+            const current = document.body.dataset.theme;
+            const nextTheme = themes[(themes.indexOf(current) + 1) % themes.length];
+            setTheme(nextTheme);
+        }
+        function isDesktop() { return window.matchMedia("(min-width: 1024px)").matches; }
+        function syncSidebarState() { if (isDesktop()) { document.body.classList.remove("sidebar-mobile-open"); } else { document.body.classList.remove("sidebar-collapsed"); } }
+        function toggleSidebar() { if (isDesktop()) { document.body.classList.toggle("sidebar-collapsed"); return; } document.body.classList.toggle("sidebar-mobile-open"); }
+        function closeSidebar() { document.body.classList.remove("sidebar-mobile-open"); }
+        function updateTokenInspector() {
+            const tableBody = document.getElementById("token-table-body");
+            if (!tableBody) { return; }
+            const styles = getComputedStyle(document.body);
+            tableBody.innerHTML = "";
+            tokenNames.forEach(function (name) {
+                const value = styles.getPropertyValue(name).trim();
+                const row = document.createElement("div");
+                row.className = "contents";
+                row.innerHTML = "<div class=\"flex items-center gap-3\"><span class=\"token-swatch\" style=\"background:" + value + "\"></span><span>" + name + "</span></div><div>" + value + "</div><div class=\"text-right\"><button type=\"button\" class=\"control-btn px-4 py-2 text-[1.2rem]\" data-copy-token=\"" + name + ": " + value + ";\">Copy</button></div>";
+                tableBody.appendChild(row);
+            });
+        }
+        function copyText(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text); return; }
+            const area = document.createElement("textarea");
+            area.value = text;
+            document.body.appendChild(area);
+            area.select();
+            document.execCommand("copy");
+            document.body.removeChild(area);
+        }
+        function openSampleDialog() {
+            const dialog = document.getElementById("sample-dialog");
+            if (!dialog || dialog.open) { return; }
+            if (typeof dialog.showModal === "function") { dialog.showModal(); return; }
+            dialog.setAttribute("open", "");
+        }
+        function closeSampleDialog() {
+            const dialog = document.getElementById("sample-dialog");
+            if (!dialog) { return; }
+            if (typeof dialog.close === "function") { dialog.close(); return; }
+            dialog.removeAttribute("open");
+        }
+        function openToast(type) {
+            const stack = document.getElementById("toast-stack");
+            if (!stack) { return; }
+            const colorMap = { info:"var(--info)", success:"var(--success)", warning:"var(--warning)", error:"var(--error)" };
+            const textMap = { info:"A live info toast confirms new component activity.", success:"Form settings saved successfully.", warning:"Review the pending inputs before publishing.", error:"The deployment preview failed validation." };
+            const toast = document.createElement("div");
+            toast.className = "motion-card rounded-[1.4rem] border border-[var(--b)] p-4 text-[1.4rem]";
+            toast.style.background = colorMap[type];
+            toast.style.color = type === "warning" ? "#000" : "#fff";
+            toast.textContent = textMap[type];
+            stack.prepend(toast);
+            setTimeout(function () { toast.remove(); }, 3200);
+        }
+        function switchUiTab(tabId) {
+            document.querySelectorAll("[data-ui-tab-target]").forEach(function (button) {
+                const selected = button.dataset.uiTabTarget === tabId;
+                button.setAttribute("aria-selected", selected ? "true" : "false");
+            });
+            document.querySelectorAll("[data-ui-tab-panel]").forEach(function (panel) {
+                panel.classList.toggle("hidden", panel.dataset.uiTabPanel !== tabId);
+            });
+        }
+        function toggleAccordion(panelId) {
+            const panel = document.getElementById(panelId);
+            const button = document.querySelector("[aria-controls=\"" + panelId + "\"]");
+            if (!panel || !button) { return; }
+            const expanded = button.getAttribute("aria-expanded") === "true";
+            button.setAttribute("aria-expanded", expanded ? "false" : "true");
+            panel.classList.toggle("hidden", expanded);
+        }
+        function initRevealObserver() {
+            const items = document.querySelectorAll(".reveal");
+            if (!("IntersectionObserver" in window)) { items.forEach(function (item) { item.classList.add("is-visible"); }); return; }
+            const observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) { entry.target.classList.add("is-visible"); observer.unobserve(entry.target); }
+                });
+            }, { threshold: .12 });
+            items.forEach(function (item) { observer.observe(item); });
+        }
+        function updateActiveNav() {
+            const sections = document.querySelectorAll("main section[id]");
+            const links = document.querySelectorAll(".nav-link");
+            let activeId = "";
+            sections.forEach(function (section) {
+                if (section.getBoundingClientRect().top <= 160) { activeId = section.id; }
+            });
+            links.forEach(function (link) {
+                const matches = link.getAttribute("href") === "#" + activeId;
+                link.setAttribute("aria-current", matches ? "true" : "false");
+            });
+        }
+        window.addEventListener("DOMContentLoaded", function () {
+            setTheme(getStoredTheme() || document.body.dataset.theme);
+            switchUiTab("panel-overview");
+            syncSidebarState();
+            initRevealObserver();
+            updateActiveNav();
+            window.addEventListener("resize", syncSidebarState);
+            window.addEventListener("scroll", updateActiveNav, { passive: true });
+            document.addEventListener("click", function (event) {
+                const copyTarget = event.target.closest("[data-copy-token]");
+                if (copyTarget) { copyText(copyTarget.dataset.copyToken); return; }
+                const sidebar = document.getElementById("app-sidebar");
+                const menuButton = document.getElementById("sidebar-toggle");
+                if (!isDesktop() && document.body.classList.contains("sidebar-mobile-open")) {
+                    const insideSidebar = sidebar && sidebar.contains(event.target);
+                    const menuClick = menuButton && menuButton.contains(event.target);
+                    if (!insideSidebar && !menuClick) { closeSidebar(); }
+                }
+            });
+            document.querySelectorAll(".nav-link").forEach(function (link) {
+                link.addEventListener("click", function () { if (!isDesktop()) { closeSidebar(); } });
+            });
+        });
+    </script>
+</head>
+<body data-theme="light">
+    <header class="app-header">
+        <div class="flex h-full items-center justify-between gap-4 px-4 lg:px-8">
+            <div class="flex items-center gap-3">
+                <button id="sidebar-toggle" type="button" onclick="toggleSidebar()" class="control-btn flex items-center gap-2 text-[1.3rem]">
+                    <span>menu</span>
+                    <span class="rounded-full bg-[var(--p)] px-3 py-1 text-[1.1rem] text-[var(--def)]">/</span>
+                </button>
+                <div class="header-brand">
+                    <div class="flex h-[3.2rem] w-[3.2rem] items-center justify-center bg-[var(--p)] text-[1.2rem] text-[var(--def)]">m/c</div>
+                    <div class="min-w-0">
+                        <div class="truncate text-[1.8rem] font-bold text-[var(--h)]">mono/color dashboard</div>
+                        <div class="truncate text-[1.1rem] uppercase tracking-[.18em] text-[var(--gray)]">component showcase</div>
+                    </div>
+                </div>
+            </div>
+            <div class="hidden min-w-0 flex-1 items-center justify-center px-6 lg:flex">
+                <label class="header-search">
+                    <span class="text-[1.3rem] uppercase tracking-[.18em] text-[var(--gray)]">search</span>
+                    <input type="text" value="cards forms tables toasts" aria-label="Search dashboard patterns">
+                </label>
+            </div>
+            <div class="header-meta">
+                <span><span class="status-dot bg-[var(--success)]"></span> live</span>
+                <span>theme <span id="theme-badge">light</span></span>
+            </div>
+        </div>
+    </header>
+    <div class="sidebar-overlay" onclick="closeSidebar()"></div>
+    <aside id="app-sidebar" class="app-sidebar">
+        <div class="flex h-full flex-col">
+            <div class="border-b border-[var(--b)] px-4 py-5">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-[4.6rem] w-[4.6rem] items-center justify-center rounded-[1.4rem] bg-[var(--p)] text-[1.3rem] font-bold text-[var(--def)]">mc</div>
+                    <div class="brand-copy min-w-0">
+                        <div class="truncate text-[1.6rem] font-bold text-[var(--h)]">Dashboard shell</div>
+                        <div class="truncate text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">fixed header + sidebar</div>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-block border-b border-[var(--b)] px-4 py-5">
+                <div class="surface rounded-[1.8rem] p-4">
+                    <div class="mb-3 flex items-center justify-between gap-3">
+                        <span class="text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">Release cadence</span>
+                        <span class="rounded-full bg-[var(--success)] px-3 py-1 text-[1.1rem] uppercase tracking-[.16em] text-white">healthy</span>
+                    </div>
+                    <div class="text-[3rem] font-bold text-[var(--h)]">24</div>
+                    <p class="text-[1.3rem]">Launch-ready components mapped into a dashboard-first layout.</p>
+                </div>
+            </div>
+            <nav class="flex-1 overflow-y-auto px-4 py-5">
+                <div class="sidebar-label mb-3 text-[1.1rem] uppercase tracking-[.22em] text-[var(--gray)]">Navigation</div>
+                <div class="grid gap-2">
+                    <a href="#overview" class="nav-link flex items-center gap-3 rounded-[1.4rem] border border-[var(--b)] px-3 py-3 no-underline" aria-current="true"><span class="nav-glyph flex h-[3.8rem] w-[3.8rem] items-center justify-center rounded-[1.1rem] bg-[var(--bg)] text-[1.2rem]">01</span><span class="nav-copy"><span class="block text-[1.4rem] text-[inherit]">Overview</span><span class="block text-[1.1rem] uppercase tracking-[.18em] text-[var(--gray)]">hero + metrics</span></span></a>
+                    <a href="#cards" class="nav-link flex items-center gap-3 rounded-[1.4rem] border border-[var(--b)] px-3 py-3 no-underline" aria-current="false"><span class="nav-glyph flex h-[3.8rem] w-[3.8rem] items-center justify-center rounded-[1.1rem] bg-[var(--bg)] text-[1.2rem]">02</span><span class="nav-copy"><span class="block text-[1.4rem] text-[inherit]">Cards</span><span class="block text-[1.1rem] uppercase tracking-[.18em] text-[var(--gray)]">stats + activity</span></span></a>
+                    <a href="#forms" class="nav-link flex items-center gap-3 rounded-[1.4rem] border border-[var(--b)] px-3 py-3 no-underline" aria-current="false"><span class="nav-glyph flex h-[3.8rem] w-[3.8rem] items-center justify-center rounded-[1.1rem] bg-[var(--bg)] text-[1.2rem]">03</span><span class="nav-copy"><span class="block text-[1.4rem] text-[inherit]">Forms</span><span class="block text-[1.1rem] uppercase tracking-[.18em] text-[var(--gray)]">inputs + states</span></span></a>
+                    <a href="#components" class="nav-link flex items-center gap-3 rounded-[1.4rem] border border-[var(--b)] px-3 py-3 no-underline" aria-current="false"><span class="nav-glyph flex h-[3.8rem] w-[3.8rem] items-center justify-center rounded-[1.1rem] bg-[var(--bg)] text-[1.2rem]">04</span><span class="nav-copy"><span class="block text-[1.4rem] text-[inherit]">Components</span><span class="block text-[1.1rem] uppercase tracking-[.18em] text-[var(--gray)]">tabs + dialog</span></span></a>
+                    <a href="#tokens" class="nav-link flex items-center gap-3 rounded-[1.4rem] border border-[var(--b)] px-3 py-3 no-underline" aria-current="false"><span class="nav-glyph flex h-[3.8rem] w-[3.8rem] items-center justify-center rounded-[1.1rem] bg-[var(--bg)] text-[1.2rem]">05</span><span class="nav-copy"><span class="block text-[1.4rem] text-[inherit]">Tokens</span><span class="block text-[1.1rem] uppercase tracking-[.18em] text-[var(--gray)]">theme values</span></span></a>
+                </div>
+            </nav>
+            <div class="sidebar-footer border-t border-[var(--b)] px-4 py-5">
+                <div class="surface rounded-[1.8rem] p-4">
+                    <div class="mb-2 text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">Sidebar controls</div>
+                    <p class="text-[1.3rem]">Theme switching lives here now, alongside the layout control for the shell.</p>
+                    <button type="button" onclick="toggleTheme()" class="solid-btn mt-4 w-full text-[1.3rem]">Theme <span id="theme-label" class="lowercase">light</span></button>
+                    <button type="button" onclick="toggleSidebar()" class="ghost-btn mt-3 w-full text-[1.3rem]">Toggle sidebar</button>
+                </div>
+            </div>
+        </div>
+    </aside>
+    <main class="app-main content-main">
+        <div class="mx-auto flex w-full max-w-[160rem] flex-col gap-6">
+            <section id="overview" class="reveal">
+                <div class="grid gap-6 xl:grid-cols-[1.65fr_.95fr]">
+                    <article class="surface motion-card rounded-[2.4rem] p-6 lg:p-8">
+                        <div class="mb-5 flex flex-wrap items-center gap-3">
+                            <span class="rounded-full border border-[var(--b)] bg-[var(--bg)] px-4 py-2 text-[1.1rem] uppercase tracking-[.18em]">dashboard overview</span>
+                            <span class="rounded-full bg-[var(--accent)] px-4 py-2 text-[1.1rem] uppercase tracking-[.18em] text-white">tailwind + mono</span>
+                        </div>
+                        <div class="grid gap-6 lg:grid-cols-[1.3fr_.7fr]">
+                            <div class="space-y-4">
+                                <h1 class="text-[clamp(3.6rem,5vw,6rem)] font-bold">A real dashboard shell, still unmistakably mono/color.</h1>
+                                <p class="max-w-[72rem] text-[1.6rem]">The styling remains rooted in the original token system and mono typography, but the page now behaves like an application: fixed header, collapsible sidebar, and component-heavy content blocks meant for operational dashboards.</p>
+                                <div class="flex flex-wrap gap-3">
+                                    <a href="#cards" class="solid-btn inline-flex items-center gap-2 no-underline text-[1.3rem]">Browse cards <span>/</span></a>
+                                    <a href="#forms" class="ghost-btn inline-flex items-center gap-2 no-underline text-[1.3rem]">Inspect form states</a>
+                                    <button type="button" onclick="openSampleDialog()" class="ghost-btn text-[1.3rem]">Open modal demo</button>
+                                </div>
+                            </div>
+                            <div class="surface rounded-[2rem] p-5">
+                                <div class="mb-4 flex items-center justify-between gap-3">
+                                    <span class="text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">Session snapshot</span>
+                                    <span class="rounded-full border border-[var(--b)] px-3 py-1 text-[1.1rem]">v2.4.1</span>
+                                </div>
+                                <div class="grid gap-4">
+                                    <div>
+                                        <div class="mb-2 flex items-center justify-between gap-3 text-[1.3rem]"><span>Completion</span><span class="text-[var(--h)]">84%</span></div>
+                                        <div class="metric-bar"><span style="width:84%; background:var(--success);"></span></div>
+                                    </div>
+                                    <div>
+                                        <div class="mb-2 flex items-center justify-between gap-3 text-[1.3rem]"><span>Density</span><span class="text-[var(--h)]">62%</span></div>
+                                        <div class="metric-bar"><span style="width:62%; background:var(--accent);"></span></div>
+                                    </div>
+                                    <div>
+                                        <div class="mb-2 flex items-center justify-between gap-3 text-[1.3rem]"><span>Accessibility</span><span class="text-[var(--h)]">AA</span></div>
+                                        <div class="metric-bar"><span style="width:91%; background:var(--info);"></span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                    <article class="surface motion-card rounded-[2.4rem] p-6">
+                        <div class="mb-4 flex items-center justify-between gap-3">
+                            <div>
+                                <div class="text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">Control center</div>
+                                <h2 class="mt-2 text-[2.6rem] font-bold">Quick actions</h2>
+                            </div>
+                            <span class="rounded-full bg-[var(--warning)] px-3 py-1 text-[1.1rem] uppercase tracking-[.16em] text-black">watch</span>
+                        </div>
+                        <div class="grid gap-3">
+                            <button type="button" onclick="openToast('info')" class="ghost-btn w-full text-left text-[1.3rem]">Trigger info toast</button>
+                            <button type="button" onclick="openToast('success')" class="ghost-btn w-full text-left text-[1.3rem]">Trigger success toast</button>
+                            <button type="button" onclick="openToast('warning')" class="ghost-btn w-full text-left text-[1.3rem]">Trigger warning toast</button>
+                            <button type="button" onclick="openToast('error')" class="ghost-btn w-full text-left text-[1.3rem]">Trigger error toast</button>
+                        </div>
+                        <div class="mt-5 rounded-[1.8rem] border border-[var(--b)] bg-[var(--bg)] p-4">
+                            <div class="mb-3 text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">Toast stack</div>
+                            <div id="toast-stack" class="toast-stack"></div>
+                        </div>
+                    </article>
+                </div>
+            </section>
+            <section class="reveal">
+                <div class="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
+                    <article class="surface motion-card rounded-[2rem] p-5">
+                        <div class="mb-3 flex items-center justify-between gap-3"><span class="text-[1.1rem] uppercase tracking-[.18em] text-[var(--gray)]">Active boards</span><span class="status-dot bg-[var(--success)]"></span></div>
+                        <div class="text-[3.4rem] font-bold text-[var(--h)]">12</div>
+                        <p class="mt-2 text-[1.4rem]">Dense, readable metric cards with minimal chrome.</p>
+                    </article>
+                    <article class="surface motion-card rounded-[2rem] p-5">
+                        <div class="mb-3 flex items-center justify-between gap-3"><span class="text-[1.1rem] uppercase tracking-[.18em] text-[var(--gray)]">Pending reviews</span><span class="status-dot bg-[var(--warning)]"></span></div>
+                        <div class="text-[3.4rem] font-bold text-[var(--h)]">07</div>
+                        <p class="mt-2 text-[1.4rem]">Uses alert colors as secondary signals instead of large fills.</p>
+                    </article>
+                    <article class="surface motion-card rounded-[2rem] p-5">
+                        <div class="mb-3 flex items-center justify-between gap-3"><span class="text-[1.1rem] uppercase tracking-[.18em] text-[var(--gray)]">Error rate</span><span class="status-dot bg-[var(--error)]"></span></div>
+                        <div class="text-[3.4rem] font-bold text-[var(--h)]">0.8%</div>
+                        <p class="mt-2 text-[1.4rem]">Still visually calm because the shell leans on borders and contrast.</p>
+                    </article>
+                    <article class="surface motion-card rounded-[2rem] p-5">
+                        <div class="mb-3 flex items-center justify-between gap-3"><span class="text-[1.1rem] uppercase tracking-[.18em] text-[var(--gray)]">Cycle time</span><span class="status-dot bg-[var(--info)]"></span></div>
+                        <div class="text-[3.4rem] font-bold text-[var(--h)]">3.1d</div>
+                        <p class="mt-2 text-[1.4rem]">Good dashboard rhythm comes from repeatable card proportions.</p>
+                    </article>
+                </div>
+            </section>
+            <section id="cards" class="reveal">
+                <div class="grid gap-6 xl:grid-cols-[1.3fr_.9fr]">
+                    <article class="surface rounded-[2.4rem] p-6">
+                        <div class="mb-5 flex items-end justify-between gap-4">
+                            <div>
+                                <div class="text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">Card showcase</div>
+                                <h2 class="mt-2 text-[3.2rem] font-bold">Operational cards, tables, and small data views</h2>
+                            </div>
+                            <span class="rounded-full border border-[var(--b)] bg-[var(--bg)] px-4 py-2 text-[1.1rem] uppercase tracking-[.18em]">section 02</span>
+                        </div>
+                        <div class="grid gap-4 lg:grid-cols-[1.15fr_.85fr]">
+                            <div class="surface motion-card rounded-[2rem] p-5">
+                                <div class="mb-4 flex items-center justify-between gap-3">
+                                    <div>
+                                        <h3 class="text-[2.2rem] font-bold">Sprint burn</h3>
+                                        <p class="text-[1.3rem]">A chart-like block without leaving the mono language.</p>
+                                    </div>
+                                    <span class="rounded-full bg-[var(--accent)] px-3 py-1 text-[1.1rem] uppercase tracking-[.16em] text-white">stable</span>
+                                </div>
+                                <div class="grid gap-4">
+                                    <div><div class="mb-2 flex items-center justify-between gap-3 text-[1.3rem]"><span>Discovery</span><span>92%</span></div><div class="metric-bar"><span style="width:92%; background:var(--accent);"></span></div></div>
+                                    <div><div class="mb-2 flex items-center justify-between gap-3 text-[1.3rem]"><span>Design</span><span>78%</span></div><div class="metric-bar"><span style="width:78%; background:var(--info);"></span></div></div>
+                                    <div><div class="mb-2 flex items-center justify-between gap-3 text-[1.3rem]"><span>Build</span><span>67%</span></div><div class="metric-bar"><span style="width:67%; background:var(--success);"></span></div></div>
+                                    <div><div class="mb-2 flex items-center justify-between gap-3 text-[1.3rem]"><span>QA</span><span>41%</span></div><div class="metric-bar"><span style="width:41%; background:var(--warning);"></span></div></div>
+                                </div>
+                            </div>
+                            <div class="surface motion-card rounded-[2rem] p-5">
+                                <div class="mb-4 flex items-center justify-between gap-3">
+                                    <div>
+                                        <h3 class="text-[2.2rem] font-bold">Queue health</h3>
+                                        <p class="text-[1.3rem]">Compact cards can carry rich metadata.</p>
+                                    </div>
+                                    <span class="rounded-full border border-[var(--b)] px-3 py-1 text-[1.1rem]">14m</span>
+                                </div>
+                                <div class="grid gap-3">
+                                    <div class="rounded-[1.6rem] border border-[var(--b)] bg-[var(--bg)] p-4"><div class="flex items-center justify-between gap-3"><span>Sync workers</span><span class="text-[var(--success)]">healthy</span></div></div>
+                                    <div class="rounded-[1.6rem] border border-[var(--b)] bg-[var(--bg)] p-4"><div class="flex items-center justify-between gap-3"><span>API gateway</span><span class="text-[var(--warning)]">degraded</span></div></div>
+                                    <div class="rounded-[1.6rem] border border-[var(--b)] bg-[var(--bg)] p-4"><div class="flex items-center justify-between gap-3"><span>Asset pipeline</span><span class="text-[var(--info)]">syncing</span></div></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 table-grid table-4 text-[1.4rem]">
+                            <div class="text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">Workflow</div>
+                            <div class="text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">Owner</div>
+                            <div class="text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">State</div>
+                            <div class="text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">ETA</div>
+                            <div>Header search refinements</div><div>Design</div><div class="text-[var(--success)]">shipped</div><div>today</div>
+                            <div>Sidebar density pass</div><div>Frontend</div><div class="text-[var(--warning)]">review</div><div>2h</div>
+                            <div>Card analytics widgets</div><div>Platform</div><div class="text-[var(--info)]">active</div><div>tomorrow</div>
+                        </div>
+                    </article>
+                    <article class="surface rounded-[2.4rem] p-6">
+                        <div class="mb-5">
+                            <div class="text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">Activity feed</div>
+                            <h2 class="mt-2 text-[3rem] font-bold">Mixed card types</h2>
+                        </div>
+                        <div class="grid gap-4">
+                            <article class="motion-card rounded-[2rem] border border-[var(--b)] bg-[var(--bg)] p-5"><div class="mb-2 flex items-center justify-between gap-3"><h3 class="text-[1.9rem] font-bold">Deployment preview</h3><span class="rounded-full bg-[var(--success)] px-3 py-1 text-[1.1rem] uppercase tracking-[.16em] text-white">green</span></div><p class="text-[1.4rem]">New shell layout passed regression checks with the sidebar collapsed and expanded.</p></article>
+                            <article class="motion-card rounded-[2rem] border border-[var(--b)] bg-[var(--bg)] p-5"><div class="mb-2 flex items-center justify-between gap-3"><h3 class="text-[1.9rem] font-bold">Accessibility note</h3><span class="rounded-full bg-[var(--info)] px-3 py-1 text-[1.1rem] uppercase tracking-[.16em] text-white">focus</span></div><p class="text-[1.4rem]">Controls keep visible focus rings instead of relying only on hover or color shifts.</p></article>
+                            <article class="motion-card rounded-[2rem] border border-[var(--b)] bg-[var(--bg)] p-5"><div class="mb-2 flex items-center justify-between gap-3"><h3 class="text-[1.9rem] font-bold">Visual system</h3><span class="rounded-full bg-[var(--accent)] px-3 py-1 text-[1.1rem] uppercase tracking-[.16em] text-white">tokens</span></div><p class="text-[1.4rem]">Cards, tables, forms, and dialogs all inherit from the same body-driven CSS variables.</p></article>
+                        </div>
+                    </article>
+                </div>
+            </section>
+            <section id="forms" class="reveal">
+                <div class="grid gap-6 xl:grid-cols-[1.05fr_.95fr]">
+                    <article class="surface rounded-[2.4rem] p-6">
+                        <div class="mb-5 flex items-end justify-between gap-4">
+                            <div>
+                                <div class="text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">Form lab</div>
+                                <h2 class="mt-2 text-[3.2rem] font-bold">Inputs, grouped fields, validation, and check states</h2>
+                            </div>
+                            <span class="rounded-full border border-[var(--b)] bg-[var(--bg)] px-4 py-2 text-[1.1rem] uppercase tracking-[.18em]">section 03</span>
+                        </div>
+                        <form class="grid gap-5">
+                            <div class="grid gap-5 lg:grid-cols-2">
+                                <label class="grid gap-2 text-[1.3rem]">
+                                    <span class="uppercase tracking-[.14em] text-[var(--gray)]">Workspace name</span>
+                                    <input class="field" type="text" value="mono/color dashboard">
+                                </label>
+                                <label class="grid gap-2 text-[1.3rem]">
+                                    <span class="uppercase tracking-[.14em] text-[var(--gray)]">Environment</span>
+                                    <select class="select">
+                                        <option>Production</option>
+                                        <option>Staging</option>
+                                        <option>Development</option>
+                                    </select>
+                                </label>
+                            </div>
+                            <label class="grid gap-2 text-[1.3rem]">
+                                <span class="uppercase tracking-[.14em] text-[var(--gray)]">Announcement</span>
+                                <textarea class="textarea min-h-[14rem]">This block demonstrates multiline form controls inside the dashboard shell while keeping the mono/color tone.</textarea>
+                            </label>
+                            <div class="grid gap-5 lg:grid-cols-[1fr_auto]">
+                                <label class="grid gap-2 text-[1.3rem]">
+                                    <span class="uppercase tracking-[.14em] text-[var(--gray)]">Owner handle</span>
+                                    <div class="flex overflow-hidden rounded-[1.2rem] border border-[var(--b)] bg-[var(--bg)]">
+                                        <span class="flex items-center px-4 text-[var(--gray)]">@</span>
+                                        <input class="field rounded-none border-0 bg-transparent" type="text" value="ops-console">
+                                    </div>
+                                </label>
+                                <label class="grid gap-2 text-[1.3rem]">
+                                    <span class="uppercase tracking-[.14em] text-[var(--gray)]">Quota</span>
+                                    <input class="field w-full lg:w-[18rem]" type="number" value="24">
+                                </label>
+                            </div>
+                            <div class="grid gap-4 md:grid-cols-3">
+                                <label class="rounded-[1.6rem] border border-[var(--success)] bg-[var(--bg)] p-4 text-[1.3rem]">
+                                    <span class="mb-2 block uppercase tracking-[.14em] text-[var(--gray)]">Success</span>
+                                    <input class="field border-[var(--success)]" type="email" value="ready@mono.color">
+                                    <span class="mt-2 block text-[1.2rem] text-[var(--success)]">Configuration looks good.</span>
+                                </label>
+                                <label class="rounded-[1.6rem] border border-[var(--warning)] bg-[var(--bg)] p-4 text-[1.3rem]">
+                                    <span class="mb-2 block uppercase tracking-[.14em] text-[var(--gray)]">Warning</span>
+                                    <input class="field border-[var(--warning)]" type="text" value="needs review">
+                                    <span class="mt-2 block text-[1.2rem] text-[var(--warning)]">Please verify before shipping.</span>
+                                </label>
+                                <label class="rounded-[1.6rem] border border-[var(--error)] bg-[var(--bg)] p-4 text-[1.3rem]">
+                                    <span class="mb-2 block uppercase tracking-[.14em] text-[var(--gray)]">Error</span>
+                                    <input class="field border-[var(--error)]" type="text" value="missing token">
+                                    <span class="mt-2 block text-[1.2rem] text-[var(--error)]">A required field is invalid.</span>
+                                </label>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-4">
+                                <label class="flex items-center gap-3 rounded-full border border-[var(--b)] bg-[var(--bg)] px-4 py-3 text-[1.3rem]"><input type="checkbox" checked> Sticky header</label>
+                                <label class="flex items-center gap-3 rounded-full border border-[var(--b)] bg-[var(--bg)] px-4 py-3 text-[1.3rem]"><input type="checkbox" checked> Collapsible sidebar</label>
+                                <label class="flex items-center gap-3 rounded-full border border-[var(--b)] bg-[var(--bg)] px-4 py-3 text-[1.3rem]"><input type="checkbox"> Dense mode</label>
+                            </div>
+                            <div class="flex flex-wrap gap-3">
+                                <button type="button" class="solid-btn text-[1.3rem]">Save settings</button>
+                                <button type="reset" class="ghost-btn text-[1.3rem]">Reset form</button>
+                            </div>
+                        </form>
+                    </article>
+                    <article class="surface rounded-[2.4rem] p-6">
+                        <div class="mb-5">
+                            <div class="text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">Form sidecars</div>
+                            <h2 class="mt-2 text-[3rem] font-bold">Support panels for dashboard forms</h2>
+                        </div>
+                        <div class="grid gap-4">
+                            <div class="rounded-[2rem] border border-[var(--b)] bg-[var(--bg)] p-5">
+                                <div class="mb-2 text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">Readonly state</div>
+                                <input readonly class="field" type="text" value="dashboard-shell-v2">
+                            </div>
+                            <div class="rounded-[2rem] border border-[var(--b)] bg-[var(--bg)] p-5">
+                                <div class="mb-2 text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">Disabled state</div>
+                                <input disabled class="field opacity-60" type="text" value="disabled-input">
+                            </div>
+                            <div class="rounded-[2rem] border border-[var(--b)] bg-[var(--bg)] p-5">
+                                <div class="mb-3 flex items-center justify-between gap-3">
+                                    <h3 class="text-[2rem] font-bold">Checklist card</h3>
+                                    <span class="rounded-full border border-[var(--b)] px-3 py-1 text-[1.1rem]">3/4</span>
+                                </div>
+                                <div class="grid gap-3 text-[1.4rem]">
+                                    <label class="flex items-center gap-3"><input type="checkbox" checked> Header remains fixed during scroll</label>
+                                    <label class="flex items-center gap-3"><input type="checkbox" checked> Sidebar collapses on desktop</label>
+                                    <label class="flex items-center gap-3"><input type="checkbox" checked> Drawer closes on mobile selection</label>
+                                    <label class="flex items-center gap-3"><input type="checkbox"> Add chart component examples</label>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </section>
+            <section id="components" class="reveal">
+                <div class="grid gap-6 xl:grid-cols-[1.2fr_.8fr]">
+                    <article class="surface rounded-[2.4rem] p-6">
+                        <div class="mb-5 flex items-end justify-between gap-4">
+                            <div>
+                                <div class="text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">Components</div>
+                                <h2 class="mt-2 text-[3.2rem] font-bold">Tabs, accordions, dialog triggers, and code samples</h2>
+                            </div>
+                            <span class="rounded-full border border-[var(--b)] bg-[var(--bg)] px-4 py-2 text-[1.1rem] uppercase tracking-[.18em]">section 04</span>
+                        </div>
+                        <div class="mb-4 flex flex-wrap gap-2">
+                            <button class="ui-tab-btn rounded-full border border-[var(--b)] px-4 py-3 text-[1.3rem]" data-ui-tab-target="panel-overview" aria-selected="true" onclick="switchUiTab('panel-overview')">Overview</button>
+                            <button class="ui-tab-btn rounded-full border border-[var(--b)] px-4 py-3 text-[1.3rem]" data-ui-tab-target="panel-markup" aria-selected="false" onclick="switchUiTab('panel-markup')">Markup</button>
+                            <button class="ui-tab-btn rounded-full border border-[var(--b)] px-4 py-3 text-[1.3rem]" data-ui-tab-target="panel-behavior" aria-selected="false" onclick="switchUiTab('panel-behavior')">Behavior</button>
+                        </div>
+                        <div class="rounded-[2rem] border border-[var(--b)] bg-[var(--bg)] p-5">
+                            <div data-ui-tab-panel="panel-overview" class="grid gap-4">
+                                <p class="text-[1.5rem]">This panel shows how the same dashboard shell can host several component categories without losing rhythm. Tabs handle content switching, while borders and spacing keep the mono/color tone intact.</p>
+                                <div class="grid gap-4 lg:grid-cols-2">
+                                    <div class="rounded-[1.8rem] border border-[var(--b)] bg-[var(--def)] p-4">
+                                        <div class="mb-2 text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">Dialog</div>
+                                        <p class="text-[1.4rem]">Use modal interactions for focused tasks and confirmations.</p>
+                                        <button type="button" onclick="openSampleDialog()" class="solid-btn mt-4 text-[1.3rem]">Launch dialog</button>
+                                    </div>
+                                    <div class="rounded-[1.8rem] border border-[var(--b)] bg-[var(--def)] p-4">
+                                        <div class="mb-2 text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">Toasts</div>
+                                        <p class="text-[1.4rem]">Small status notifications stack naturally in the sidebar-adjacent rail.</p>
+                                        <button type="button" onclick="openToast('success')" class="ghost-btn mt-4 text-[1.3rem]">Show success toast</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div data-ui-tab-panel="panel-markup" class="hidden">
+<pre><code>&lt;header class="app-header"&gt;...&lt;/header&gt;
+&lt;aside class="app-sidebar"&gt;...&lt;/aside&gt;
+&lt;main class="app-main"&gt;
+  &lt;section class="surface rounded-[2.4rem]"&gt;...&lt;/section&gt;
+&lt;/main&gt;</code></pre>
+                            </div>
+                            <div data-ui-tab-panel="panel-behavior" class="hidden">
+<pre><code>function toggleSidebar() {
+  if (isDesktop()) {
+    document.body.classList.toggle("sidebar-collapsed");
+    return;
+  }
+  document.body.classList.toggle("sidebar-mobile-open");
+}</code></pre>
+                            </div>
+                        </div>
+                        <div class="mt-4 grid gap-3">
+                            <button aria-expanded="false" aria-controls="component-acc-1" onclick="toggleAccordion('component-acc-1')" class="ghost-btn text-left text-[1.3rem]">Why use a fixed header here?</button>
+                            <div id="component-acc-1" class="hidden rounded-[1.8rem] border border-[var(--b)] bg-[var(--bg)] p-4 text-[1.4rem]">It keeps search, theme switching, and primary actions constantly available while the dashboard content scrolls underneath.</div>
+                            <button aria-expanded="false" aria-controls="component-acc-2" onclick="toggleAccordion('component-acc-2')" class="ghost-btn text-left text-[1.3rem]">How does the collapsible sidebar behave?</button>
+                            <div id="component-acc-2" class="hidden rounded-[1.8rem] border border-[var(--b)] bg-[var(--bg)] p-4 text-[1.4rem]">On desktop it compresses to an icon rail. On mobile it becomes an off-canvas drawer with an overlay and closes when a nav item is selected.</div>
+                            <button aria-expanded="false" aria-controls="component-acc-3" onclick="toggleAccordion('component-acc-3')" class="ghost-btn text-left text-[1.3rem]">What is preserved from the original page?</button>
+                            <div id="component-acc-3" class="hidden rounded-[1.8rem] border border-[var(--b)] bg-[var(--bg)] p-4 text-[1.4rem]">The core theme tokens, mono typography, subtle hover motion, and light-dark-monokai switching remain intact. The change is mostly architectural.</div>
+                        </div>
+                    </article>
+                    <article class="surface rounded-[2.4rem] p-6">
+                        <div class="mb-5">
+                            <div class="text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">Right rail</div>
+                            <h2 class="mt-2 text-[3rem] font-bold">Supportive dashboard widgets</h2>
+                        </div>
+                        <div class="grid gap-4">
+                            <div class="rounded-[2rem] border border-[var(--b)] bg-[var(--bg)] p-5">
+                                <div class="mb-3 flex items-center justify-between gap-3">
+                                    <h3 class="text-[2rem] font-bold">Mini table</h3>
+                                    <span class="rounded-full border border-[var(--b)] px-3 py-1 text-[1.1rem]">live</span>
+                                </div>
+                                <div class="table-grid table-3 text-[1.3rem]">
+                                    <div class="text-[1.1rem] uppercase tracking-[.18em] text-[var(--gray)]">Area</div>
+                                    <div class="text-[1.1rem] uppercase tracking-[.18em] text-[var(--gray)]">Trend</div>
+                                    <div class="text-[1.1rem] uppercase tracking-[.18em] text-[var(--gray)]">Delta</div>
+                                    <div>Forms</div><div class="text-[var(--success)]">up</div><div>+12%</div>
+                                    <div>Cards</div><div class="text-[var(--info)]">flat</div><div>+1%</div>
+                                    <div>Dialogs</div><div class="text-[var(--warning)]">watch</div><div>-3%</div>
+                                </div>
+                            </div>
+                            <div class="rounded-[2rem] border border-[var(--b)] bg-[var(--bg)] p-5">
+                                <div class="mb-2 text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">Action block</div>
+                                <h3 class="text-[2rem] font-bold">Component export starter</h3>
+                                <p class="mt-2 text-[1.4rem]">Use this space for exports, code actions, or secondary flows in a real app.</p>
+                                <div class="mt-4 flex flex-wrap gap-3">
+                                    <button type="button" class="solid-btn text-[1.3rem]">Export shell</button>
+                                    <button type="button" class="ghost-btn text-[1.3rem]">View docs</button>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </section>
+            <section id="tokens" class="reveal">
+                <div class="grid gap-6 xl:grid-cols-[1.1fr_.9fr]">
+                    <article class="surface rounded-[2.4rem] p-6">
+                        <div class="mb-5 flex items-end justify-between gap-4">
+                            <div>
+                                <div class="text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">Theme inspector</div>
+                                <h2 class="mt-2 text-[3.2rem] font-bold">Live token values behind the dashboard shell</h2>
+                            </div>
+                            <span class="rounded-full border border-[var(--b)] bg-[var(--bg)] px-4 py-2 text-[1.1rem] uppercase tracking-[.18em]">section 05</span>
+                        </div>
+                        <div class="table-grid table-3 text-[1.4rem]">
+                            <div class="text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">Token</div>
+                            <div class="text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">Value</div>
+                            <div class="text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)] text-right">Action</div>
+                            <div id="token-table-body" class="contents"></div>
+                        </div>
+                    </article>
+                    <article class="surface rounded-[2.4rem] p-6">
+                        <div class="mb-5">
+                            <div class="text-[1.2rem] uppercase tracking-[.18em] text-[var(--gray)]">Shell notes</div>
+                            <h2 class="mt-2 text-[3rem] font-bold">Layout principles used in this refactor</h2>
+                        </div>
+                        <div class="grid gap-4 text-[1.4rem]">
+                            <div class="rounded-[1.8rem] border border-[var(--b)] bg-[var(--bg)] p-4">
+                                <h3 class="mb-2 text-[1.9rem] font-bold">Fixed top bar</h3>
+                                <p>Anchors search, primary controls, and theme toggles while the main workspace scrolls.</p>
+                            </div>
+                            <div class="rounded-[1.8rem] border border-[var(--b)] bg-[var(--bg)] p-4">
+                                <h3 class="mb-2 text-[1.9rem] font-bold">Responsive sidebar</h3>
+                                <p>Collapses to a narrow rail on desktop and becomes an overlay drawer on smaller screens.</p>
+                            </div>
+                            <div class="rounded-[1.8rem] border border-[var(--b)] bg-[var(--bg)] p-4">
+                                <h3 class="mb-2 text-[1.9rem] font-bold">Consistent surfaces</h3>
+                                <p>Cards, forms, and helper panels all inherit the same border, radius, and token logic for visual coherence.</p>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </section>
+        </div>
+    </main>
+    <dialog id="sample-dialog">
+        <div class="p-6">
+            <div class="mb-4 flex items-center justify-between gap-4">
+                <div>
+                    <h3 class="text-[2.4rem] font-bold">Dashboard modal</h3>
+                    <p class="mt-1 text-[1.4rem]">A focused interaction that still matches the shell styling.</p>
+                </div>
+                <button type="button" onclick="closeSampleDialog()" class="ghost-btn text-[1.2rem]">Close</button>
+            </div>
+            <div class="grid gap-4">
+                <label class="grid gap-2 text-[1.3rem]">
+                    <span class="uppercase tracking-[.14em] text-[var(--gray)]">Title</span>
+                    <input class="field" type="text" value="mono/color dashboard refresh">
+                </label>
+                <label class="grid gap-2 text-[1.3rem]">
+                    <span class="uppercase tracking-[.14em] text-[var(--gray)]">Summary</span>
+                    <textarea class="textarea min-h-[12rem]">The modal uses the same tokens and form controls as the rest of the dashboard, so it reads like a natural extension of the shell.</textarea>
+                </label>
+            </div>
+            <div class="mt-6 flex flex-wrap gap-3">
+                <button type="button" onclick="closeSampleDialog()" class="ghost-btn text-[1.3rem]">Cancel</button>
+                <button type="button" onclick="closeSampleDialog(); openToast('success');" class="solid-btn text-[1.3rem]">Save changes</button>
+            </div>
+        </div>
+    </dialog>
+</body>
+</html>
