@@ -142,6 +142,7 @@
         }
         function openSampleDialog() { const dialog = document.getElementById("sample-dialog"); if (!dialog || dialog.open) return; if (typeof dialog.showModal === "function") { dialog.showModal(); return; } dialog.setAttribute("open", ""); }
         function closeSampleDialog() { const dialog = document.getElementById("sample-dialog"); if (!dialog) return; if (typeof dialog.close === "function") { dialog.close(); return; } dialog.removeAttribute("open"); }
+        function handleDialogBackdrop(event) { if (event.target && event.target.nodeName === "DIALOG") closeSampleDialog(); }
         function openToast(type) {
             const stack = document.getElementById("toast-stack");
             if (!stack) return;
@@ -267,7 +268,7 @@
                         <div class="mt-6 flex flex-wrap gap-3">
                             <a href="#cards" class="ctrl ctrl-red fill inline-flex items-center justify-center px-6 no-underline">Open Matrix</a>
                             <a href="#forms" class="ctrl inline-flex items-center justify-center px-6 no-underline">Inspect Config</a>
-                            <button type="button" onclick="openSampleDialog()" class="ctrl px-6">Launch Dialog</button>
+                            <button type="button" onclick="openSampleDialog()" class="ctrl px-6">Open Modal Demo</button>
                         </div>
                     </article>
                     <aside class="panel-grid">
@@ -445,7 +446,7 @@
                             <div data-ui-tab-panel="telemetry-overview" class="grid gap-4">
                                 <p class="text-[1.5rem] text-[var(--muted)]">The component demos are reframed as system modules. Every block is square, line-driven, and labeled as telemetry rather than generic UI furniture.</p>
                                 <div class="panel-grid lg:grid-cols-2">
-                                    <div class="p-4"><div class="unit-text">Dialog Module</div><p class="mt-3 text-[1.3rem] text-[var(--muted)]">Use modal isolation for operator confirmations or single-task command entry.</p><button type="button" onclick="openSampleDialog()" class="ctrl ctrl-red fill mt-4">Launch Dialog</button></div>
+                                    <div class="p-4"><div class="unit-text">Modal Demonstration</div><p class="mt-3 text-[1.3rem] text-[var(--muted)]">A dedicated dialog sample for isolated task review, operator confirmation, and focused command entry.</p><button type="button" onclick="openSampleDialog()" class="ctrl ctrl-red fill mt-4">Open Modal Demo</button></div>
                                     <div class="p-4"><div class="unit-text">Toast Bus</div><p class="mt-3 text-[1.3rem] text-[var(--muted)]">Stacked alerts stay in-system and avoid decorative message chrome.</p><button type="button" onclick="openToast('signal')" class="ctrl mt-4">Emit Signal</button></div>
                                 </div>
                             </div>
@@ -528,21 +529,31 @@
         </div>
     </main>
 
-    <dialog id="sample-dialog">
-        <div class="p-6">
+    <dialog id="sample-dialog" onclick="handleDialogBackdrop(event)">
+        <div>
             <div class="flex items-start justify-between gap-4 border-b border-[var(--line)] p-6">
                 <div>
-                    <div class="label">Dialog Module</div>
-                    <h3 class="macro mt-4 text-[3.2rem]">Operator Command</h3>
+                    <div class="label">Modal Demonstration</div>
+                    <h3 class="macro mt-4 text-[3.2rem]">Operator Review Window</h3>
+                    <p class="mt-4 max-w-[48rem] text-[1.3rem] text-[var(--muted)]">Use this modal to demonstrate isolated review, short-form command entry, and focused confirmation actions without leaving the main telemetry surface.</p>
                 </div>
                 <button type="button" onclick="closeSampleDialog()" class="ctrl">Close</button>
             </div>
-            <div class="grid gap-4 p-6">
-                <label class="grid gap-2"><span class="unit-text">Command Title</span><input class="field" type="text" value="MC TELEMETRY / PAYLOAD UPDATE"></label>
-                <label class="grid gap-2"><span class="unit-text">Dispatch Summary</span><textarea class="textarea">Dialog styling inherits the same tactical substrate, line system, and operator labels as the dashboard shell.</textarea></label>
+            <div class="grid gap-6 p-6">
+                <div class="panel-grid md:grid-cols-3 text-[1.2rem] uppercase tracking-[.14em]">
+                    <div class="p-4"><div class="text-[var(--muted)]">Priority</div><output class="mt-3 block text-[var(--accent)]">Review</output></div>
+                    <div class="p-4"><div class="text-[var(--muted)]">Window</div><output class="mt-3 block text-[var(--accent-5)]">14 Min</output></div>
+                    <div class="p-4"><div class="text-[var(--muted)]">Mode</div><output class="mt-3 block text-[var(--ok)]">Focused</output></div>
+                </div>
+                <div class="grid gap-4">
+                    <label class="grid gap-2"><span class="unit-text">Command Title</span><input class="field" type="text" value="MC TELEMETRY / PAYLOAD UPDATE"></label>
+                    <label class="grid gap-2"><span class="unit-text">Dispatch Summary</span><textarea class="textarea">Dialog styling inherits the same tactical substrate, fixed line system, and operator labels as the main dashboard shell while isolating a single task.</textarea></label>
+                    <label class="grid gap-2"><span class="unit-text">Approval Route</span><select class="select"><option>PRIMARY OPERATOR</option><option>DESIGN REVIEW</option><option>SYSTEM ADMIN</option></select></label>
+                </div>
             </div>
             <div class="flex flex-wrap gap-2 border-t border-[var(--line)] p-6">
                 <button type="button" onclick="closeSampleDialog()" class="ctrl">Cancel</button>
+                <button type="button" onclick="openToast('neutral')" class="ctrl">Queue Review</button>
                 <button type="button" onclick="closeSampleDialog(); openToast('confirm');" class="ctrl ctrl-red fill">Commit</button>
             </div>
         </div>
